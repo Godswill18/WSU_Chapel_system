@@ -5,41 +5,85 @@ const announcementSchema = new mongoose.Schema(
     title: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 200
     },
-
-    description: {
+    content: {
       type: String,
       required: true,
+      trim: true,
+      maxlength: 500 // Short summary for cards
     },
-
+    fullContent: {
+      type: String,
+      required: true,
+      trim: true
+    },
+    author: {
+      type: String,
+      required: true,
+      trim: true,
+      maxlength: 100
+    },
+    date: {
+      type: String, // Storing as String in YYYY-MM-DD format
+      required: true,
+      match: /^\d{4}-\d{2}-\d{2}$/ // Ensures YYYY-MM-DD format
+    },
+    category: {
+      type: String,
+      required: true,
+      enum: ['general', 'event', 'urgent', 'community'],
+      default: 'general'
+    },
+    pinned: {
+      type: Boolean,
+      default: false
+    },
     image: {
       type: String,
-      default: "",
+      trim: true,
+      default: ""
     },
-
-    type: {
+    // Optional fields that might be useful
+    lastUpdatedBy: {
       type: String,
-      required: true,
-      enum: ["general", "departmental", "course"],
+      trim: true
     },
-
-    department: {
-      type: String,
-      // required: function () {
-      //   return this.type === "departmental";
-      // },
-      // enum: ['choir', 'instrumentalist','ushering', 'sanctuary', 'decoration','evangelism', 'technical','sunday school','utility', 'drama']
+    expiresAt: {
+      type: String, // Could also be Date if needed
+      match: /^\d{4}-\d{2}-\d{2}$/
     },
-
-    // course: {
-    //   type: String,
-    //   required: function () {
-    //     return this.type === "course";
-    //   },
-    // },
+    // For future features
+    tags: {
+      type: [String],
+      default: []
+    },
+    // For analytics
+    views: {
+      type: Number,
+      default: 0
+    }
   },
-  { timestamps: true }
+  { 
+    timestamps: true,
+    toJSON: {
+      virtuals: true,
+      transform: function(doc, ret) {
+        ret.id = ret._id;
+        delete ret._id;
+        delete ret.__v;
+        return ret;
+      }
+    }
+  }
 );
+
+// Indexes for better performance
+announcementSchema.index({ title: 'text', content: 'text' });
+announcementSchema.index({ category: 1 });
+announcementSchema.index({ pinned: 1 });
+announcementSchema.index({ date: 1 });
 
 const Announcement = mongoose.model("Announcement", announcementSchema);
 

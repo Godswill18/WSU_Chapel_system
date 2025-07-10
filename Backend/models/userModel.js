@@ -9,10 +9,11 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    department:{
-        type: String,
-        required: true,
-    },
+    departments: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Department",
+    default: []
+    }],
     position:{
         type: String,
         required: true,
@@ -39,6 +40,26 @@ const userSchema = new mongoose.Schema({
     profileImg:{
         type: String,
         default:""
+    },
+    address: {
+        type: String,
+        default: ""
+    },
+    bio: {
+        type: String,
+        default: ""
+    },
+    emergencyContactName: {
+        type: String,
+        default: ""
+    },
+    emergencyContact: {
+        type: String,
+        default: ""
+    },
+    emergencyRelationship: {
+        type: String,
+        default: ""
     },
     password:{
         type: String,

@@ -5,9 +5,9 @@ import User from "../models/userModel.js";
 // For Creating nominees for a vote || Admins can create nominees
 export const createNominees = async (req, res) => {
   try {
-    const { title, nomineeIds, startTime, endTime } = req.body;
+    const { category, nomineeIds, endTime } = req.body;
 
-    if (!title || !nomineeIds || !startTime || !endTime) {
+    if (!category || !nomineeIds || !endTime) {
       return res.status(400).json({ message: "Missing required fields." });
     }
 
@@ -22,9 +22,8 @@ export const createNominees = async (req, res) => {
     }));
 
     const vote = new Vote({
-      title,
+      category,
       nominees,
-      startTime,
       endTime,
     });
 
@@ -74,28 +73,41 @@ export const voteUser = async (req, res) => {
     const { voteId, nomineeId } = req.body;
     const userId = req.user._id;
 
-    const vote = await Vote.findById(voteId);
-    if (!vote) return res.status(404).json({ message: "Vote not found." });
+    // Find and update the vote in one operation to avoid race conditions
+    const vote = await Vote.findOneAndUpdate(
+      {
+        _id: voteId,
+        createdAt: { $lte: new Date() },
+        endTime: { $gte: new Date() },
+        voters: { $ne: userId }
+      },
+      {
+        $inc: { 'nominees.$[elem].voteCount': 1 },
+        $push: { voters: userId }
+      },
+      {
+        arrayFilters: [{ 'elem._id': nomineeId }],
+        new: true
+      }
+    );
 
-    const now = new Date();
-    if (now < vote.startTime || now > vote.endTime) {
-      return res.status(403).json({ message: "Voting is not active." });
-    }
-
-    if (vote.voters.includes(userId)) {
-      return res.status(403).json({ message: "You have already voted." });
-    }
-
-    const nominee = vote.nominees.find(n => n._id.toString() === nomineeId);
-    if (!nominee) {
+    if (!vote) {
+      // Check why the vote wasn't found
+      const existingVote = await Vote.findById(voteId);
+      if (!existingVote) {
+        return res.status(404).json({ message: "Vote not found." });
+      }
+      if (existingVote.voters.includes(userId)) {
+        return res.status(403).json({ message: "You have already voted." });
+      }
+      const now = new Date();
+      if (now < existingVote.createdAt || now > existingVote.endTime) {
+        return res.status(403).json({ message: "Voting is not active." });
+      }
       return res.status(404).json({ message: "Nominee not found in this vote." });
     }
 
-    nominee.voteCount += 1;
-    vote.voters.push(userId);
-
-    await vote.save();
-    res.status(200).json({ message: "Vote cast successfully." });
+    res.status(200).json({ message: "Vote cast successfully.", vote });
   } catch (error) {
     console.error("voteUser error:", error.message);
     res.status(500).json({ error: "Internal server error." });
@@ -103,7 +115,7 @@ export const voteUser = async (req, res) => {
 };
 
 // Function to get all nominees for a specific vote
-// This will return the vote title, start time, end time, and nominees with their names
+// This will return the vote category, start time, end time, and nominees with their names
 export const getNominees = async (req, res) => {
     const { voteId } = req.params;
   try {
@@ -112,7 +124,7 @@ export const getNominees = async (req, res) => {
     if (!vote) return res.status(404).json({ message: "Vote not found." });
 
     res.status(200).json({
-      title: vote.title,
+      category: vote.category,
       startTime: vote.startTime,
       endTime: vote.endTime,
       nominees: vote.nominees.map(n => ({
@@ -127,11 +139,83 @@ export const getNominees = async (req, res) => {
   }
 };
 
+// getNominees controller
+export const getUserNominees = async (req, res) => {
+ try {
+    const userId = req.user?._id;
+    
+    // Fetch votes with populated nominees and user details
+    const votes = await Vote.find({
+      createdAt: { $lte: new Date() },
+      endTime: { $gte: new Date() }
+    })
+    .populate({
+      path: 'nominees.user',
+      select: 'firstName lastName profileImg position department'
+    })
+    .populate({
+      path: 'voters',
+      select: '_id'
+    })
+    .lean();
+
+    // Add userHasVoted status for each vote
+    const votesWithStatus = votes.map(vote => ({
+      ...vote,
+      userHasVoted: userId ? vote.voters.some(voter => voter._id.equals(userId)) : false
+    }));
+
+    res.status(200).json({ votes: votesWithStatus });
+  } catch (error) {
+    console.error("getCurrentVotes error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+
+export const getCurrentVote = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const now = new Date();
+    const vote = await Vote.findOne({
+      createdAt: { $lte: now },
+      endTime: { $gte: now }
+    }).populate("nominees.user", "firstName lastName profileImg department position description");
+
+    if (!vote) return res.status(404).json({ message: "No active voting at this time." });
+
+    const hasVoted = vote.voters.includes(userId);
+
+    res.status(200).json({
+      _id: vote._id,
+      voteCategory: vote.category,
+      createdAt: vote.createdAt,
+      endTime: vote.endTime,
+      userVote: hasVoted ? vote.nominees.find(n => n.voters?.includes(userId))?.user?._id : null,
+      nominees: vote.nominees.map(n => ({
+        _id: n.user._id,
+        name: `${n.user.firstName} ${n.user.lastName}`,
+        profileImg: n.user.profileImg,
+        department: n.user.department,
+        position: n.user.position,
+        description: n.user.description,
+      })),
+    });
+  } catch (error) {
+    console.error("getCurrentVote error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+
 // Function to get all votes with nominees and their vote counts || Admins can see all votes
-// This will return the vote title, nominees with their names and vote counts, total votes,
+// This will return the vote category, nominees with their names and vote counts, total votes,
 export const getVotes = async (req, res) => {
   try {
-    const votes = await Vote.find().populate("nominees.user", "firstName lastName");
+    const votes = await Vote.find();
 
     const now = new Date();
     const compiledVotes = votes.map(vote => {
@@ -145,7 +229,7 @@ export const getVotes = async (req, res) => {
 
       return {
         _id: vote._id,
-        title: vote.title,
+        category: vote.category,
         nominees: vote.nominees.map(n => ({
           name: `${n.user.firstName} ${n.user.lastName}`,
           votes: n.voteCount

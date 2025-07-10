@@ -1,5 +1,5 @@
 import express from 'express';
-import { createNominees, voteUser, getNominees, getVotes, publishResult, editNominees, deleteVoteCategory } from '../../controllers/votesControllers.js';
+import { createNominees, voteUser, getNominees, getVotes, publishResult, editNominees, deleteVoteCategory, getUserNominees } from '../../controllers/votesControllers.js';
 import { protectRoute, protectAdminRoute } from '../../middleware/protectRoute.js';
 const router = express.Router();
 
@@ -16,7 +16,7 @@ router.delete('/deleteCategory/:voteId', protectAdminRoute, deleteVoteCategory)
 router.post('/voteUser', protectRoute, voteUser);
 
 // Route to get all nominees
-router.get('/getNominees/:voteId', protectRoute, getNominees);
+router.get('/current', protectRoute, getUserNominees);
 
 // Route to get all votes
 router.get('/getVotes', protectAdminRoute, getVotes);

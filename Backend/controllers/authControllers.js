@@ -7,80 +7,71 @@ export const register = async (req, res) => {
   try {
     const { firstName, lastName, department, position, courseOfStudy, email, phoneNumber, dateOfBirth, password } = req.body;
 
-    // Validate required fields
-    if (!firstName || !lastName || !department || !position|| !courseOfStudy || !email || !phoneNumber || !dateOfBirth || !password) {
-      return res.status(400).json({ error: "All fields are required" });
+    if (!firstName || !lastName || !department || !position || !courseOfStudy || !email || !phoneNumber || !dateOfBirth || !password) {
+      return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
+      return res.status(400).json({ success: false, message: "Invalid email format" });
     }
 
-    // Check if phone number already exists
     const existingPhoneNumber = await User.findOne({ phoneNumber });
     if (existingPhoneNumber) {
-      return res.status(400).json({ error: "Phone number already exists" });
+      return res.status(400).json({ success: false, message: "Phone number already exists" });
     }
 
-    // Check if email already exists
     const existingEmail = await User.findOne({ email });
     if (existingEmail) {
-      return res.status(400).json({ error: "Email already exists" });
+      return res.status(400).json({ success: false, message: "Email already exists" });
     }
 
-    if(password.length < 4) {
-      return res.status(400).json({ error: "Password must be at least 4 characters long" });
+    if (password.length < 4) {
+      return res.status(400).json({ success: false, message: "Password must be at least 4 characters long" });
     }
 
-    // Hash the password
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    // Create a new user
     const newUser = new User({
-        firstName,
-        lastName,
-        department,
-        position,
-        courseOfStudy,
-        email,
-        phoneNumber,
-        dateOfBirth,
-        password: hashedPassword,
+      firstName,
+      lastName,
+      department,
+      position,
+      courseOfStudy,
+      email,
+      phoneNumber,
+      dateOfBirth,
+      password: hashedPassword,
     });
 
-    if(newUser){
-       // Save the user and generate a token
-       generateTokenAndSetCookie(newUser._id, res);
-        await newUser.save();
+    await newUser.save();
 
-    res.status(201).json({
-     _id: newUser._id,
-     firstName: newUser.firstName,
-     lastName: newUser.username,
-     department: newUser.department,
-     position: newUser.position,
-     courseOfStudy: newUser.courseOfStudy,
-      email: newUser.email,
-      phoneNumber: newUser.phoneNumber,
-      dateOfBirth: newUser.dateOfBirth,
-      profileImg: newUser.profileImg,
-      isActivated: newUser.isActivated,
+    generateTokenAndSetCookie(newUser._id, res);
 
-
+    return res.status(201).json({
+      success: true,
+      message: "Account created successfully",
+      data: {
+        _id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        department: newUser.department,
+        position: newUser.position,
+        courseOfStudy: newUser.courseOfStudy,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        dateOfBirth: newUser.dateOfBirth,
+        profileImg: newUser.profileImg,
+        isActivated: newUser.isActivated,
+      },
     });
-  } else {
-    res.status(400).json({ error: "User creation failed" });
-  }
-
-   
   } catch (error) {
-    console.log("Error in signup controller:", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error("Error in signup controller:", error.message);
+    res.status(500).json({ success: false, message: "Internal server error" });
   }
 };
+
 
 
 export const login = async (req, res) => {
@@ -102,7 +93,10 @@ export const login = async (req, res) => {
     generateTokenAndSetCookie(user._id, res);
     // console.log(generateTokenAndSetCookie())
     res.status(200).json({
-      _id: user._id,
+      success: true,
+      message: "Welcome",
+      data: {
+        _id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
       department: user.department,
@@ -113,6 +107,7 @@ export const login = async (req, res) => {
       dateOfBirth: user.dateOfBirth,
       profileImg: user.profileImg,
     //   coverImg: user.coverImg,
+    }
     });
 
 

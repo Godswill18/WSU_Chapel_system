@@ -1,34 +1,30 @@
 import Calendar from "../../models/calendarModel.js";
 
 export const createChapelEvent = async (req, res) => {
-    try{
-
-        const { title, description, startDate, endDate, location } = req.body;
+    try {
+        const { title, date, time, location, type, description, organizer, attendees } = req.body;
 
         // Validate required fields
-        if (!title || !description || !startDate || !endDate || !location) {
+        if (!title || !date || !time || !location || !type || !description || !organizer) {
             return res.status(400).json({ error: "All fields are required" });
         }
 
-        // Validate date formats
-        const start = new Date(startDate);
-        const end = new Date(endDate);
-        if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        // Validate date format
+        const eventDate = new Date(date);
+        if (isNaN(eventDate.getTime())) {
             return res.status(400).json({ error: "Invalid date format" });
-        }
-
-        // Check if start date is before end date
-        if (start > end) {
-            return res.status(400).json({ error: "Start date must be before end date" });
         }
 
         // Create the event
         const newEvent = new Calendar({
             title,
+            date: eventDate,
+            time,
+            location,
+            type,
             description,
-            startDate: start,
-            endDate: end,
-            location
+            organizer,
+            attendees: attendees || []  // default to empty array if not provided
         });
 
         await newEvent.save();
@@ -37,7 +33,7 @@ export const createChapelEvent = async (req, res) => {
             event: newEvent
         });
 
-    }catch(error){
+    } catch (error) {
         console.error("Error creating event:", error.message);
         res.status(500).json({ error: "Internal server error" });
     }

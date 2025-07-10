@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 
 const voteSchema = new mongoose.Schema({
-  title: {
+  category: {
     type: String,
     required: true,
   },
@@ -24,10 +24,6 @@ const voteSchema = new mongoose.Schema({
       ref: "User",
     },
   ],
-  startTime: {
-    type: Date,
-    required: true,
-  },
   endTime: {
     type: Date,
     required: true,

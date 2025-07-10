@@ -1,40 +1,100 @@
 import Announcement from "../models/AnnouncementModel.js";
 import fs from "fs";
 import path from "path";
-
+import { batchCreateNotifications } from "../lib/utils/notificationUtils.js";
+import User from "../models/userModel.js";
 
 export const createAnnouncement = async (req, res) => {
   try {
-    const { title, description, type, department} = req.body;
-
-    // Basic required fields
-    if (!title || !description || !type) {
-      return res.status(400).json({ message: "Title, description, and type are required." });
-    }
-
+    const { 
+      title, 
+      content, 
+      fullContent, 
+      author, 
+      date, 
+      category, 
+      pinned,
+      tags = [] 
+    } = req.body;
     
-    // Type-specific validation
-    if (type === "departmental" && !department) {
-      return res.status(400).json({ message: "Department is required for departmental announcements." });
+    const createdBy = req.user._id;
+
+    // Required fields validation
+    if (!title || !content || !fullContent || !author || !date || !category) {
+      return res.status(400).json({ 
+        message: "Title, content, fullContent, author, date, and category are required." 
+      });
     }
 
-    if (type === "course" && !course) {
-      return res.status(400).json({ message: "Course is required for course announcements." });
+    // Date format validation (YYYY-MM-DD)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return res.status(400).json({ 
+        message: "Date must be in YYYY-MM-DD format." 
+      });
     }
 
-    const ImagePath = req.file ? req.file.path : "";
+    // Category validation
+    const validCategories = ['general', 'event', 'urgent', 'community'];
+    if (!validCategories.includes(category)) {
+      return res.status(400).json({ 
+        message: "Invalid category." 
+      });
+    }
+
+    const imagePath = req.file ? req.file.path : "";
 
     const announcement = new Announcement({
       title,
-      description,
-      image: ImagePath || "", // Default to empty string if not provided
-      type,
-      department
-      // department: type === "departmental" ? department : undefined,
-      // course: type === "course" ? course : undefined,
+      content,
+      fullContent,
+      author,
+      date,
+      category,
+      pinned: pinned || false,
+      image: imagePath,
+      tags,
+      createdBy
     });
 
     await announcement.save();
+
+    // Notification logic (updated for new schema)
+    try {
+      let recipientUserIds = [];
+      
+      // For urgent announcements, notify all active users
+      if (category === 'urgent') {
+        const activeUsers = await User.find({ isActive: true }).select('_id');
+        recipientUserIds = activeUsers.map(user => user._id);
+      } 
+      // For community announcements, notify users who opted in
+      else if (category === 'community') {
+        const communityUsers = await User.find({ 
+          notifyCommunity: true,
+          isActive: true 
+        }).select('_id');
+        recipientUserIds = communityUsers.map(user => user._id);
+      }
+
+      // Don't notify the creator
+      recipientUserIds = recipientUserIds.filter(id => id.toString() !== createdBy.toString());
+
+      if (recipientUserIds.length > 0) {
+        await batchCreateNotifications(
+          createdBy,
+          recipientUserIds,
+          'announcement',
+          `New ${category.charAt(0).toUpperCase() + category.slice(1)} Announcement`,
+          title,
+          {
+            announcementId: announcement._id,
+            category
+          }
+        );
+      }
+    } catch (notifError) {
+      console.error("Notification error (non-critical):", notifError.message);
+    }
 
     res.status(201).json({
       message: "Announcement created successfully.",
@@ -42,13 +102,29 @@ export const createAnnouncement = async (req, res) => {
     });
   } catch (error) {
     console.error("Error creating announcement:", error.message);
+    
+    if (req.file?.path && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    
     res.status(500).json({ error: "Internal server error" });
   }
 };
 
 export const getAllAnnouncements = async (req, res) => {
   try {
-    const announcements = await Announcement.find().sort({ createdAt: -1 });
+    const { category, pinned, search } = req.query;
+    const filter = {};
+    
+    if (category) filter.category = category;
+    if (pinned) filter.pinned = pinned === 'true';
+    if (search) {
+      filter.$text = { $search: search };
+    }
+
+    const announcements = await Announcement.find(filter)
+      .sort({ pinned: -1, date: -1, createdAt: -1 });
+      
     res.status(200).json(announcements);
   } catch (error) {
     console.error("Error fetching announcements:", error.message);
@@ -56,37 +132,26 @@ export const getAllAnnouncements = async (req, res) => {
   }
 };
 
-// export const getUserAnouncements = async(req, res) => {
-//   const {department } = req.params;
-
-//   try{
-//     const announcements = await Announcement.find({
-//       $or: [
-//         {type: "general"},
-//         {type: "departmental", department: department},
-//       ]
-//     }).sort({ createdAt: -1 });
-
-//     res.status(200).json(announcements);
-//   }catch (error) {
-//     console.error("Error fetching user announcements:", error.message);
-//     res.status(500).json({ error: "Internal server error" });
-//   }
-// }
 export const getUserAnnouncements = async (req, res) => {
   try {
-    const userDepartment = req.user?.department;
+    // Get announcements based on user preferences
+    const user = await User.findById(req.user._id);
+    
+    const filter = {
+      $or: [
+        { category: 'general' },
+        { category: 'urgent' },
+        { category: 'event' }
+      ]
+    };
 
-    if (!userDepartment) {
-      return res.status(400).json({ message: "User department is required." });
+    // Include community if user opted in
+    if (user?.notifyCommunity) {
+      filter.$or.push({ category: 'community' });
     }
 
-    const announcements = await Announcement.find({
-      $or: [
-        { type: "general" },
-        { type: "departmental", department: userDepartment },
-      ]
-    }).sort({ createdAt: -1 });
+    const announcements = await Announcement.find(filter)
+      .sort({ pinned: -1, date: -1, createdAt: -1 });
 
     res.status(200).json(announcements);
   } catch (error) {
@@ -98,7 +163,11 @@ export const getUserAnnouncements = async (req, res) => {
 export const getAnnouncementById = async (req, res) => {
   try {
     const { id } = req.params;
-    const announcement = await Announcement.findById(id);
+    const announcement = await Announcement.findByIdAndUpdate(
+      id,
+      { $inc: { views: 1 } },
+      { new: true }
+    );
 
     if (!announcement) {
       return res.status(404).json({ message: "Announcement not found." });
@@ -114,59 +183,41 @@ export const getAnnouncementById = async (req, res) => {
 export const updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, description, type, department, course } = req.body;
-
+    const updates = req.body;
+    
     const existingAnnouncement = await Announcement.findById(id);
     if (!existingAnnouncement) {
-      // Cleanup uploaded image if announcement doesn't exist
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
+      if (req.file?.path) fs.unlinkSync(req.file.path);
       return res.status(404).json({ message: "Announcement not found." });
     }
 
-    // Validate non-empty updates
-    if (
-      (title !== undefined && title.trim() === "") ||
-      (description !== undefined && description.trim() === "") ||
-      (type !== undefined && type.trim() === "")
-    ) {
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(400).json({ message: "Fields cannot be empty if provided." });
+    // Date format validation if date is being updated
+    if (updates.date && !/^\d{4}-\d{2}-\d{2}$/.test(updates.date)) {
+      if (req.file?.path) fs.unlinkSync(req.file.path);
+      return res.status(400).json({ message: "Date must be in YYYY-MM-DD format." });
     }
 
-    if (type === "departmental" && (!department || department.trim() === "")) {
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-      return res.status(400).json({ message: "Department is required for departmental announcements." });
+    // Category validation if category is being updated
+    if (updates.category && !['general', 'event', 'urgent', 'community'].includes(updates.category)) {
+      if (req.file?.path) fs.unlinkSync(req.file.path);
+      return res.status(400).json({ message: "Invalid category." });
     }
 
-    if (type === "course" && (!course || course.trim() === "")) {
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
+    // Update fields
+    const allowedUpdates = ['title', 'content', 'fullContent', 'author', 'date', 'category', 'pinned', 'tags'];
+    allowedUpdates.forEach(field => {
+      if (updates[field] !== undefined) {
+        existingAnnouncement[field] = updates[field];
       }
-      return res.status(400).json({ message: "Course is required for course announcements." });
-    }
+    });
 
-    // Update fields only if they were provided
-    if (title !== undefined) existingAnnouncement.title = title;
-    if (description !== undefined) existingAnnouncement.description = description;
-    if (type !== undefined) existingAnnouncement.type = type;
-    if (type === "departmental") existingAnnouncement.department = department;
-    if (type === "course") existingAnnouncement.course = course;
-
-    // Handle image update (only if validation passed above)
+    // Handle image update
     if (req.file) {
       const newImagePath = req.file.path;
-
       // Delete old image if it exists
       if (existingAnnouncement.image && fs.existsSync(existingAnnouncement.image)) {
         fs.unlinkSync(existingAnnouncement.image);
       }
-
       existingAnnouncement.image = newImagePath;
     }
 
@@ -178,6 +229,29 @@ export const updateAnnouncement = async (req, res) => {
     });
   } catch (error) {
     console.error("Error updating announcement:", error.message);
+    if (req.file?.path) fs.unlinkSync(req.file.path);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const togglePinAnnouncement = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const announcement = await Announcement.findById(id);
+    if (!announcement) {
+      return res.status(404).json({ message: "Announcement not found." });
+    }
+
+    announcement.pinned = !announcement.pinned;
+    await announcement.save();
+
+    res.status(200).json({
+      message: `Announcement ${announcement.pinned ? 'pinned' : 'unpinned'} successfully.`,
+      announcement
+    });
+  } catch (error) {
+    console.error("Error toggling pin status:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
 };
@@ -186,18 +260,15 @@ export const deleteAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const announcement = await Announcement.findById(id);
+    const announcement = await Announcement.findByIdAndDelete(id);
     if (!announcement) {
       return res.status(404).json({ message: "Announcement not found." });
     }
 
-    // Delete image from local storage if it exists
+    // Delete image if it exists
     if (announcement.image && fs.existsSync(announcement.image)) {
       fs.unlinkSync(announcement.image);
     }
-
-    // Delete the announcement from the database
-    await Announcement.findByIdAndDelete(id);
 
     res.status(200).json({ message: "Announcement deleted successfully." });
   } catch (error) {
@@ -205,5 +276,3 @@ export const deleteAnnouncement = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
-
-// This code defines the controllers for managing announcements in a Node.js application using Express and Mongoose.

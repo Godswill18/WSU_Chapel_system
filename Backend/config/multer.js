@@ -12,7 +12,7 @@ const storage = multer.diskStorage({
     }
 
     // uploads/<userId>   (Backend/uploads if you need that prefix)
-    const uploadPath = path.join("Backend/uploads/images/profileImg", String(userId));
+    const uploadPath = path.join("uploads/images/profileImg", String(userId));
 
     // Create the folder recursively if it doesn’t exist
     if (!fs.existsSync(uploadPath)) {

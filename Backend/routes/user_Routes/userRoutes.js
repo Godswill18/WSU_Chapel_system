@@ -1,7 +1,7 @@
 import express from 'express';
 import { protectRoute } from '../../middleware/protectRoute.js';
 import upload from '../../config/multer.js';
-import { getUserProfile, updatePeofile, getAllUsers, getAllUsersInDepartment, uploadProfile } from '../../controllers/userController.js';
+import { getUserProfile, updateProfile, getAllUsers, getAllUsersInDepartment, uploadProfile, getBirthdays, uploadProfileImg, changePassword } from '../../controllers/userController.js';
 
 const router = express.Router();
 
@@ -11,9 +11,18 @@ router.post("/uploadProfileImg", protectRoute, upload.single("image"), uploadPro
 
 router.get("/getAllUsers", protectRoute, getAllUsers);
 
+router.get("/getBirthdays", protectRoute, getBirthdays);
+
 router.get("/getAllUsersInDepartment/:department", protectRoute, getAllUsersInDepartment);
 
-router.put("/updateProfile", protectRoute, updatePeofile);
+// Update user profile
+router.put('/updateProfile', protectRoute, updateProfile);
+
+// Upload profile image
+router.put('/uploadProfileImg', protectRoute, upload.single('image'), uploadProfileImg);
+
+// Change password
+router.put('/changePassword', protectRoute, changePassword);
 
 export default router;
 
