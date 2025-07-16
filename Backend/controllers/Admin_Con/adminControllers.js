@@ -1,6 +1,7 @@
-import {generateTokenAndSetCookie} from '../../lib/utils/generateToken.js';
+import {generateAdminTokenAndSetCookie} from '../../lib/utils/generateAdminToken.js';
 import Admin from "../../models/adminModel.js";
 import bcrypt from 'bcryptjs';
+import User from '../../models/userModel.js';
 
 
 // export const signUp = async (req, res) => {
@@ -58,7 +59,7 @@ import bcrypt from 'bcryptjs';
 //     });
 
 //     await newAdmin.save();
-//     generateTokenAndSetCookie(newAdmin._id, res);
+//     generateAdminTokenAndSetCookie(newAdmin._id, res);
 
 //     res.status(201).json({
 //       _id: newAdmin._id,
@@ -105,8 +106,8 @@ export const signUp = async (req, res) => {
     }
 
     // Enforce max 2 super_admins
-    if (account_Type === "super_admin") {
-      const superAdminCount = await Admin.countDocuments({ account_Type: "super_admin" });
+    if (account_Type === "super admin") {
+      const superAdminCount = await Admin.countDocuments({ account_Type: "super admin" });
       if (superAdminCount >= 2) {
         return res.status(403).json({ error: "Only 2 super admins are allowed." });
       }
@@ -125,9 +126,9 @@ export const signUp = async (req, res) => {
       password: hashedPassword,
     });
 
-    await newAdmin.save();
-    generateTokenAndSetCookie(newAdmin._id, res);
-
+     await newAdmin.save();
+    const token = generateAdminTokenAndSetCookie(newAdmin._id); // Modified to return token
+    
     res.status(201).json({
       _id: newAdmin._id,
       firstName: newAdmin.firstName,
@@ -136,7 +137,9 @@ export const signUp = async (req, res) => {
       phoneNumber: newAdmin.phoneNumber,
       account_Type: newAdmin.account_Type,
       profileImg: newAdmin.profileImg,
+      token // Include token in response
     });
+
 
   } catch (error) {
     console.error("Signup error:", error.message);
@@ -146,22 +149,32 @@ export const signUp = async (req, res) => {
 
 
 
-
 export const login = async (req, res) => {
-  try{
+  try {
     const { email, password } = req.body;
 
-    const admin = await Admin.findOne({ email });
-    const isPasswordCorrect = await bcrypt.compare(password, admin?.password || "");
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({ error: "Please provide both email and password" });
+    }
 
-    if(!admin || !isPasswordCorrect) {
+    // Find admin by email
+    const admin = await Admin.findOne({ email });
+    if (!admin) {
       return res.status(400).json({ error: "Invalid email or password" });
     }
-    
-    // Generate a token and set it in the cookie
-    generateTokenAndSetCookie(admin._id, res);
-    // console.log(generateTokenAndSetCookie())
-    res.status(200).json({
+
+    // Check password
+    const isPasswordCorrect = await bcrypt.compare(password, admin.password);
+    if (!isPasswordCorrect) {
+      return res.status(400).json({ error: "Invalid email or password" });
+    }
+
+    // Generate token and set cookie
+    const token = generateAdminTokenAndSetCookie(admin._id, res);
+
+    // Return admin data without sensitive information
+    const adminData = {
       _id: admin._id,
       firstName: admin.firstName,
       lastName: admin.lastName,
@@ -169,15 +182,15 @@ export const login = async (req, res) => {
       phoneNumber: admin.phoneNumber,
       account_Type: admin.account_Type,
       profileImg: admin.profileImg,
-    });
+      token: token // Include token in response if needed
+    };
 
+    res.status(200).json(adminData);
 
-  }catch(error){
-    console.log("Error in login controller:", error.message);
+  } catch (error) {
+    console.error("Error in login controller:", error.message);
     res.status(500).json({ error: "Internal server error" });
   }
-
-
 };
 
 export const logout = async (req, res) => {
@@ -193,7 +206,7 @@ try{
 
 export const getMe = async (req, res) => {
   try{
-    const admin = await Admin.findById(req.user._id).select("-password"); // The user is already attached to the request object by the protectRoute middleware
+    const admin = await Admin.findById(req.admin._id).select("-password"); // The admin is already attached to the request object by the protectRoute middleware
     res.status(200).json(admin)
 
   }catch(error){
@@ -201,3 +214,173 @@ export const getMe = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 }
+
+
+
+export const getAllAdmins = async (req, res) => {
+  try {
+    // Get all admins with specific fields
+    const admins = await Admin.find({
+      account_Type: 'admin' // Only get users with admin role
+    })
+    .select('firstName lastName email phoneNumber profileImage isActive account_Type createdAt')
+    .lean();
+
+    if (admins.length === 0) {
+      return res.status(200).json({ 
+        success: true,
+        message: "No admins found",
+        admins: []
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Admins retrieved successfully",
+      admins
+    });
+
+  } catch (error) {
+    console.error("Error in getting all admins:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+
+export const getAllUsers = async (req, res) => {
+  try {
+    // Get all user with specific fields
+    const users = await User.find()
+    // .select('firstName lastName email phoneNumber profileImage isActive department position createdAt')
+    // .lean();
+
+    if (users.length === 0) {
+      return res.status(200).json({ 
+        success: true,
+        message: "No user found",
+        users: []
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "User retrieved successfully",
+      users
+    });
+
+  } catch (error) {
+    console.error("Error in getting all user:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+// Toggle admin status
+export const toggleAdminStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the admin and toggle their status
+    const admin = await Admin.findById(id);
+    if (!admin) {
+      return res.status(404).json({
+        success: false,
+        message: "Admin not found"
+      });
+    }
+
+    admin.isActive = !admin.isActive;
+    await admin.save();
+
+    res.status(200).json({
+      success: true,
+      message: `Admin's Account ${admin.isActive ? 'activated' : 'deactivated'} successfully`,
+      admin: {
+        _id: admin._id,
+        isActive: admin.isActive
+      }
+    });
+
+  } catch (error) {
+    console.error("Error toggling admin status:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+export const toggleUserStatus = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Find the user and toggle their status
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found"
+      });
+    }
+
+    user.isActivated = !user.isActivated;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: `User's Account ${user.isActivated ? 'activated' : 'deactivated'} successfully`,
+      user: {
+        _id: user._id,
+        isActivated: user.isActivated
+      }
+    });
+
+  } catch (error) {
+    console.error("Error toggling user status:", error.message);
+    res.status(500).json({
+      success: false,
+      message: "Internal server error",
+      error: error.message
+    });
+  }
+};
+
+// / Change password
+export const changePassword = async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  const adminId = req.admin._id;
+
+  try {
+    const admin = await Admin.findById(adminId);
+    if (!admin) return res.status(404).json({ message: "Admin not found" });
+
+    // Verify current password
+    const isMatch = await bcrypt.compare(currentPassword, admin.password);
+    if (!isMatch) return res.status(400).json({ error: "Current password is incorrect" });
+
+    // Validate new password
+    if (newPassword.length < 4) {
+      return res.status(400).json({ error: "New password must be at least 4 characters long" });
+    }
+
+    // Hash and save new password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+    admin.password = hashedPassword;
+
+    await admin.save();
+
+    res.status(200).json({ message: "Password changed successfully" });
+  } catch (error) {
+    console.log("Error in changePassword:", error.message);
+    res.status(500).json({ error: "Failed to change password" });
+  }
+};

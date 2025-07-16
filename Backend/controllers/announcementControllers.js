@@ -6,69 +6,83 @@ import User from "../models/userModel.js";
 
 export const createAnnouncement = async (req, res) => {
   try {
+    // Validate user authentication first
+    // if (!req.user || !req.user._id) {
+    //   return res.status(401).json({ 
+    //     message: "Unauthorized - User not authenticated" 
+    //   });
+    // }
+
     const { 
       title, 
       content, 
       fullContent, 
       author, 
-      date, 
+      // date, 
       category, 
-      pinned,
-      tags = [] 
+      pinned = false,
+      priority,
+      // tags = [] 
     } = req.body;
     
-    const createdBy = req.user._id;
+    // const createdBy = req.user._id;
 
     // Required fields validation
-    if (!title || !content || !fullContent || !author || !date || !category) {
+    const requiredFields = { title, content, fullContent, author, category, priority };
+    const missingFields = Object.entries(requiredFields)
+      .filter(([_, value]) => !value)
+      .map(([key]) => key);
+
+    if (missingFields.length > 0) {
       return res.status(400).json({ 
-        message: "Title, content, fullContent, author, date, and category are required." 
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        missingFields
       });
     }
 
     // Date format validation (YYYY-MM-DD)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return res.status(400).json({ 
-        message: "Date must be in YYYY-MM-DD format." 
-      });
-    }
+    // if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    //   return res.status(400).json({ 
+    //     message: "Date must be in YYYY-MM-DD format",
+    //     received: date
+    //   });
+    // }
 
     // Category validation
     const validCategories = ['general', 'event', 'urgent', 'community'];
     if (!validCategories.includes(category)) {
       return res.status(400).json({ 
-        message: "Invalid category." 
+        message: `Invalid category. Must be one of: ${validCategories.join(', ')}`,
+        received: category
       });
     }
 
-    const imagePath = req.file ? req.file.path : "";
+    // Handle file upload if present
+    const imagePath = req.file ? req.file.path : undefined;
 
     const announcement = new Announcement({
       title,
       content,
       fullContent,
       author,
-      date,
+      // date,
       category,
-      pinned: pinned || false,
+      pinned: Boolean(pinned),
       image: imagePath,
-      tags,
-      createdBy
+      priority
+      // tags: Array.isArray(tags) ? tags : [tags].filter(Boolean),
     });
 
-    await announcement.save();
+    const savedAnnouncement = await announcement.save();
 
-    // Notification logic (updated for new schema)
+    // Notification logic
     try {
       let recipientUserIds = [];
       
-      // For urgent announcements, notify all active users
       if (category === 'urgent') {
         const activeUsers = await User.find({ isActive: true }).select('_id');
         recipientUserIds = activeUsers.map(user => user._id);
-      } 
-      // For community announcements, notify users who opted in
-      else if (category === 'community') {
+      } else if (category === 'community') {
         const communityUsers = await User.find({ 
           notifyCommunity: true,
           isActive: true 
@@ -76,8 +90,10 @@ export const createAnnouncement = async (req, res) => {
         recipientUserIds = communityUsers.map(user => user._id);
       }
 
-      // Don't notify the creator
-      recipientUserIds = recipientUserIds.filter(id => id.toString() !== createdBy.toString());
+      // Filter out creator from notifications
+      recipientUserIds = recipientUserIds.filter(id => 
+        id.toString() !== createdBy.toString()
+      );
 
       if (recipientUserIds.length > 0) {
         await batchCreateNotifications(
@@ -87,27 +103,41 @@ export const createAnnouncement = async (req, res) => {
           `New ${category.charAt(0).toUpperCase() + category.slice(1)} Announcement`,
           title,
           {
-            announcementId: announcement._id,
+            announcementId: savedAnnouncement._id,
             category
           }
         );
       }
     } catch (notifError) {
-      console.error("Notification error (non-critical):", notifError.message);
+      console.error("Notification error (non-critical):", notifError);
+      // Continue even if notifications fail
     }
 
-    res.status(201).json({
-      message: "Announcement created successfully.",
-      announcement,
+    return res.status(201).json({
+      success: true,
+      message: "Announcement created successfully",
+      announcement: savedAnnouncement
     });
+
   } catch (error) {
-    console.error("Error creating announcement:", error.message);
-    
-    if (req.file?.path && fs.existsSync(req.file.path)) {
-      fs.unlinkSync(req.file.path);
+    console.error("Error creating announcement:", error);
+
+    // Clean up uploaded file if error occurred
+    if (req.file?.path) {
+      try {
+        if (fs.existsSync(req.file.path)) {
+          fs.unlinkSync(req.file.path);
+        }
+      } catch (fileError) {
+        console.error("Error deleting uploaded file:", fileError);
+      }
     }
     
-    res.status(500).json({ error: "Internal server error" });
+    return res.status(500).json({ 
+      success: false,
+      error: "Internal server error",
+      message: error.message 
+    });
   }
 };
 
@@ -131,6 +161,41 @@ export const getAllAnnouncements = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getAllAnnouncementsAdmin = async (req, res) => {
+  try {
+    const { category, pinned, search } = req.query;
+    const filter = {};
+
+    if (category) filter.category = category;
+    if (pinned) filter.pinned = pinned === 'true';
+    if (search) {
+      filter.$text = { $search: search };
+    }
+
+    // Fetch announcements with lean and map _id to id
+    const announcements = await Announcement.find(filter)
+      .sort({ pinned: -1, createdAt: -1 })
+      .lean()
+      .exec();
+
+    // Map _id to id and ensure object structure
+    const announcementsWithId = announcements.map((a) => ({
+      ...a,
+      id: a._id.toString(),
+    }));
+
+    res.status(200).json(announcementsWithId);
+  } catch (error) {
+    console.error("Error fetching admin announcements:", error.message);
+    res.status(500).json({ 
+      success: false,
+      error: "Internal server error",
+      message: error.message 
+    });
+  }
+};
+
 
 export const getUserAnnouncements = async (req, res) => {
   try {
@@ -163,11 +228,7 @@ export const getUserAnnouncements = async (req, res) => {
 export const getAnnouncementById = async (req, res) => {
   try {
     const { id } = req.params;
-    const announcement = await Announcement.findByIdAndUpdate(
-      id,
-      { $inc: { views: 1 } },
-      { new: true }
-    );
+    const announcement = await Announcement.findById(id); 
 
     if (!announcement) {
       return res.status(404).json({ message: "Announcement not found." });
@@ -180,38 +241,35 @@ export const getAnnouncementById = async (req, res) => {
   }
 };
 
+
 export const updateAnnouncement = async (req, res) => {
   try {
     const { id } = req.params;
     const updates = req.body;
-    
-    const existingAnnouncement = await Announcement.findById(id);
+
+    // ✅ Fetch existing document
+   const existingAnnouncement = await Announcement.findByIdAndUpdate(id);
+
     if (!existingAnnouncement) {
       if (req.file?.path) fs.unlinkSync(req.file.path);
       return res.status(404).json({ message: "Announcement not found." });
     }
 
-    // Date format validation if date is being updated
-    if (updates.date && !/^\d{4}-\d{2}-\d{2}$/.test(updates.date)) {
-      if (req.file?.path) fs.unlinkSync(req.file.path);
-      return res.status(400).json({ message: "Date must be in YYYY-MM-DD format." });
-    }
-
-    // Category validation if category is being updated
+    // ✅ Validate category
     if (updates.category && !['general', 'event', 'urgent', 'community'].includes(updates.category)) {
       if (req.file?.path) fs.unlinkSync(req.file.path);
       return res.status(400).json({ message: "Invalid category." });
     }
 
-    // Update fields
-    const allowedUpdates = ['title', 'content', 'fullContent', 'author', 'date', 'category', 'pinned', 'tags'];
+    // ✅ Update allowed fields
+    const allowedUpdates = ['title', 'content', 'fullContent', 'author', 'category', 'pinned', 'priority'];
     allowedUpdates.forEach(field => {
       if (updates[field] !== undefined) {
         existingAnnouncement[field] = updates[field];
       }
     });
 
-    // Handle image update
+    // ✅ Handle image replacement
     if (req.file) {
       const newImagePath = req.file.path;
       // Delete old image if it exists
@@ -234,25 +292,36 @@ export const updateAnnouncement = async (req, res) => {
   }
 };
 
+
+
 export const togglePinAnnouncement = async (req, res) => {
   try {
-    const { id } = req.params;
+    const announcement = await Announcement.findById(req.params.id);
     
-    const announcement = await Announcement.findById(id);
     if (!announcement) {
-      return res.status(404).json({ message: "Announcement not found." });
+      return res.status(404).json({
+        success: false,
+        message: 'Announcement not found'
+      });
     }
 
+    // Toggle the pinned status
     announcement.pinned = !announcement.pinned;
     await announcement.save();
 
     res.status(200).json({
-      message: `Announcement ${announcement.pinned ? 'pinned' : 'unpinned'} successfully.`,
-      announcement
+      success: true,
+      data: announcement,
+      message: `Announcement ${announcement.pinned ? 'pinned' : 'unpinned'} successfully`
     });
+
   } catch (error) {
-    console.error("Error toggling pin status:", error.message);
-    res.status(500).json({ error: "Internal server error" });
+    console.error('Error toggling pin status:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Server Error',
+      error: error.message
+    });
   }
 };
 

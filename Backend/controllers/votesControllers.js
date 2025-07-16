@@ -145,10 +145,7 @@ export const getUserNominees = async (req, res) => {
     const userId = req.user?._id;
     
     // Fetch votes with populated nominees and user details
-    const votes = await Vote.find({
-      createdAt: { $lte: new Date() },
-      endTime: { $gte: new Date() }
-    })
+    const votes = await Vote.find()
     .populate({
       path: 'nominees.user',
       select: 'firstName lastName profileImg position department'
@@ -260,8 +257,9 @@ export const publishResult = async (req, res) => {
 
     if (!vote) return res.status(404).json({ message: "Vote not found." });
 
-    // Prevent early publishing
-    if (new Date() < new Date(vote.endTime)) {
+    // If voting hasn't ended, check if admin is forcing publication
+    const now = new Date();
+    if (now < vote.endTime && !req.user.isAdmin) {
       return res.status(403).json({ message: "Voting is still in progress." });
     }
 
@@ -281,6 +279,7 @@ export const publishResult = async (req, res) => {
 
     vote.resultPublished = true;
     vote.winner = topNominee.user._id;
+    vote.status = 'results_published';
 
     await vote.save();
 
@@ -291,6 +290,7 @@ export const publishResult = async (req, res) => {
         name: `${topNominee.user.firstName} ${topNominee.user.lastName}`,
         profileImg: topNominee.user.profileImg,
         votes: topNominee.voteCount,
+        percentage: calculatePercentage(vote, topNominee.user._id)
       }
     });
 
@@ -316,4 +316,396 @@ export const deleteVoteCategory = async (req, res) => {
 
     }
 }
+
+export const getVoteStatus = async (req, res) => {
+  try {
+    const { voteId } = req.params;
+
+    const vote = await Vote.findById(voteId)
+      .populate('winner', 'firstName lastName profileImg position department')
+      .populate('nominees.user', 'firstName lastName profileImg');
+
+    if (!vote) {
+      return res.status(404).json({ message: "Vote not found." });
+    }
+
+    const now = new Date();
+    const response = {
+      _id: vote._id,
+      category: vote.category,
+      status: vote.status,
+      endTime: vote.endTime,
+      hasEnded: now > vote.endTime,
+      resultPublished: vote.resultPublished,
+      totalVotes: vote.voters.length,
+    };
+
+    if (vote.resultPublished && vote.winner) {
+      response.winner = {
+        _id: vote.winner._id,
+        name: `${vote.winner.firstName} ${vote.winner.lastName}`,
+        profileImg: vote.winner.profileImg,
+        position: vote.winner.position,
+        department: vote.winner.department,
+        voteCount: vote.nominees.find(n => n.user._id.equals(vote.winner._id))?.voteCount || 0,
+        percentage: calculatePercentage(vote, vote.winner._id)
+      };
+    }
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error("getVoteStatus error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getWinners = async (req, res) => {
+  try {
+    // Only get votes that have ended and results are published
+    const votes = await Vote.find({
+      endTime: { $lt: new Date() },
+      resultPublished: true
+    }).populate({
+      path: 'nominees.user winner',
+      select: 'firstName lastName profileImg position department'
+    });
+
+    const winners = {};
+    
+    for (const vote of votes) {
+      // If winner is already set in the vote document, use that
+      if (vote.winner) {
+        winners[vote._id] = {
+          user: vote.winner,
+          voteCount: vote.nominees.find(n => n.user._id.equals(vote.winner._id))?.voteCount || 0,
+          percentage: calculatePercentage(vote, vote.winner._id),
+          category: vote.category,
+          description: vote.nominees.find(n => n.user._id.equals(vote.winner._id))?.description || ''
+        };
+        continue;
+      }
+
+      // Otherwise calculate winner from nominees
+      if (vote.nominees.length === 0) continue;
+      
+      const winner = vote.nominees.reduce((prev, current) => 
+        (prev.voteCount > current.voteCount) ? prev : current
+      );
+      
+      winners[vote._id] = {
+        user: winner.user,
+        voteCount: winner.voteCount,
+        percentage: calculatePercentage(vote, winner.user._id),
+        category: vote.category,
+        description: winner.description || ''
+      };
+    }
+
+   res.status(200).json({
+  success: true,
+  winners: Object.entries(winners).map(([voteId, winnerData]) => ({
+    voteId,
+    user: winnerData.user,
+    voteCount: winnerData.voteCount,
+    percentage: winnerData.percentage,
+    category: winnerData.category
+  }))
+});
+  } catch (error) {
+    console.error("Error getting winners:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to get winners",
+      error: error.message
+    });
+  }
+};
+
+// Helper function to calculate percentage
+function calculatePercentage(vote, winnerId) {
+  const totalVotes = vote.nominees.reduce((sum, nominee) => sum + nominee.voteCount, 0);
+  const winnerVotes = vote.nominees.find(n => n.user._id.equals(winnerId))?.voteCount || 0;
+  return totalVotes > 0 ? Math.round((winnerVotes / totalVotes) * 100) : 0;
+}
+
+
+// In your votesControllers.js
+
+// Admin-only controller functions
+export const createVotingCategory = async (req, res) => {
+  try {
+    const { category, nominees, endTime } = req.body;
+
+    // Validate input
+    if (!category || !nominees || !endTime) {
+      return res.status(400).json({ message: "Category, nominee IDs, and end time are required." });
+    }
+
+    // Check if end time is in the future
+    if (new Date(endTime) <= new Date()) {
+      return res.status(400).json({ message: "End time must be in the future." });
+    }
+
+    // Verify all nominee IDs are valid users
+    const validUsers = await User.find({ _id: { $in: nominees } });
+    if (validUsers.length !== nominees.length) {
+      return res.status(400).json({ message: "One or more nominee IDs are invalid." });
+    }
+
+    // Create the vote
+    const vote = new Vote({
+      category,
+      nominees: validUsers.map(user => ({ user: user._id, voteCount: 0 })),
+      endTime,
+      // status: 'pending'
+    });
+
+    await vote.save();
+
+    res.status(201).json({
+      message: "Voting category created successfully.",
+      vote: await Vote.populate(vote, { path: 'nominees.user', select: 'firstName lastName profileImg' })
+    });
+  } catch (error) {
+    console.error("createVotingCategory error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const updateVotingCategory = async (req, res) => {
+  try {
+    const { voteId } = req.params;
+    const { category, nominees, endTime } = req.body;
+
+    const vote = await Vote.findById(voteId).populate('nominees.user', 'firstName lastName profileImg');
+    if (!vote) return res.status(404).json({ message: "Voting category not found." });
+
+    // Allow update until voting ends
+    if (new Date(vote.endTime) < new Date()) {
+      return res.status(400).json({ message: "Cannot update a voting category that has ended." });
+    }
+
+    if (category) vote.category = category;
+    if (endTime) {
+      if (new Date(endTime) <= new Date()) {
+        return res.status(400).json({ message: "End time must be in the future." });
+      }
+      vote.endTime = endTime;
+    }
+
+    if (nominees?.length) {
+      const validUsers = await User.find({ _id: { $in: nominees } });
+      if (validUsers.length !== nominees.length) {
+        return res.status(400).json({ message: "One or more nominee IDs are invalid." });
+      }
+      vote.nominees = validUsers.map(user => ({ user: user._id, voteCount: 0 }));
+    }
+
+    await vote.save();
+    res.status(200).json({
+      message: "Voting category updated successfully.",
+      vote
+    });
+  } catch (error) {
+    console.error("updateVotingCategory error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+
+export const deleteVotingCategory = async (req, res) => {
+  try {
+    const { voteId } = req.params;
+
+    const vote = await Vote.findById(voteId);
+    if (!vote) {
+      return res.status(404).json({ message: "Voting category not found." });
+    }
+
+    // Only allow deletion if voting hasn't started
+    if (vote.status !== 'pending') {
+      return res.status(400).json({ message: "Cannot delete a voting category that has already started." });
+    }
+
+    await Vote.findByIdAndDelete(voteId);
+
+    res.status(200).json({ message: "Voting category deleted successfully." });
+  } catch (error) {
+    console.error("deleteVotingCategory error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getAllVotingCategoriesAdmin = async (req, res) => {
+  try {
+    const votes = await Vote.find()
+      .populate('nominees.user', 'firstName lastName profileImg')
+      .populate('winner', 'firstName lastName profileImg')
+      .sort({ createdAt: -1 });
+
+    const now = new Date();
+    const votesWithCountdown = votes.map(vote => {
+      const timeRemaining = Math.max(0, new Date(vote.endTime) - now);
+      
+      return {
+        ...vote.toObject(),
+        countdown: {
+          days: Math.floor(timeRemaining / (1000 * 60 * 60 * 24)),
+          hours: Math.floor((timeRemaining % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)),
+          minutes: Math.floor((timeRemaining % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((timeRemaining % (1000 * 60)) / 1000),
+          hasEnded: timeRemaining <= 0
+        },
+        totalVotes: vote.voters.length,
+        status: vote.status || (timeRemaining <= 0 ? 'ended' : 'active')
+      };
+    });
+
+    res.status(200).json(votesWithCountdown);
+  } catch (error) {
+    console.error("getAllVotingCategoriesAdmin error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const publishVotingResults = async (req, res) => {
+  try {
+    const { voteId } = req.params;
+
+    const vote = await Vote.findById(voteId)
+      .populate('nominees.user', 'firstName lastName profileImg position department');
+
+    if (!vote) {
+      return res.status(404).json({ message: "Voting category not found." });
+    }
+
+    // Check if voting has ended
+    if (new Date(vote.endTime) > new Date() && !req.user.isSuperAdmin) {
+      return res.status(400).json({ message: "Cannot publish results before voting has ended." });
+    }
+
+    // Check if results are already published
+    if (vote.resultPublished) {
+      return res.status(400).json({ message: "Results have already been published." });
+    }
+
+    // Determine winner
+    if (vote.nominees.length === 0) {
+      return res.status(400).json({ message: "No nominees in this voting category." });
+    }
+
+    const winner = vote.nominees.reduce((prev, current) => 
+      (prev.voteCount > current.voteCount) ? prev : current
+    );
+
+    // Update vote with winner and publish status
+    vote.winner = winner.user._id;
+    vote.resultPublished = true;
+    vote.status = 'results_published';
+    await vote.save();
+
+    res.status(200).json({
+      message: "Voting results published successfully.",
+      winner: {
+        _id: winner.user._id,
+        name: `${winner.user.firstName} ${winner.user.lastName}`,
+        profileImg: winner.user.profileImg,
+        position: winner.user.position,
+        department: winner.user.department,
+        votes: winner.voteCount,
+        percentage: calculatePercentage(vote, winner.user._id)
+      }
+    });
+  } catch (error) {
+    console.error("publishVotingResults error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getVotingResultsAdmin = async (req, res) => {
+  try {
+    const { voteId } = req.params;
+
+    const vote = await Vote.findById(voteId)
+      .populate('nominees.user', 'firstName lastName profileImg position department')
+      .populate('winner', 'firstName lastName profileImg');
+
+    if (!vote) {
+      return res.status(404).json({ message: "Voting category not found." });
+    }
+
+    const totalVotes = vote.voters.length;
+    const now = new Date();
+    const hasEnded = new Date(vote.endTime) <= now;
+
+    const results = {
+      _id: vote._id,
+      category: vote.category,
+      status: vote.status || (hasEnded ? 'ended' : 'active'),
+      endTime: vote.endTime,
+      hasEnded,
+      resultPublished: vote.resultPublished,
+      totalVotes,
+      nominees: vote.nominees.map(nominee => ({
+        user: nominee.user,
+        votes: nominee.voteCount,
+        percentage: totalVotes > 0 ? Math.round((nominee.voteCount / totalVotes) * 100) : 0
+      })),
+      winner: vote.winner ? {
+        _id: vote.winner._id,
+        name: `${vote.winner.firstName} ${vote.winner.lastName}`,
+        profileImg: vote.winner.profileImg,
+        votes: vote.nominees.find(n => n.user._id.equals(vote.winner._id))?.voteCount || 0,
+        percentage: calculatePercentage(vote, vote.winner._id)
+      } : null
+    };
+
+    res.status(200).json(results);
+  } catch (error) {
+    console.error("getVotingResultsAdmin error:", error.message);
+    res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const getAllWinnersAdmin = async (req, res) => {
+  try {
+    const votes = await Vote.find({ resultPublished: true })
+      .populate('nominees.user');
+
+    const winners = votes.map(vote => {
+      // Find nominee with highest voteCount
+      const topNominee = vote.nominees.reduce((max, nominee) => {
+        return nominee.voteCount > max.voteCount ? nominee : max;
+      }, vote.nominees[0]);
+
+      // Calculate percentage
+      const totalVotes = vote.nominees.reduce((sum, n) => sum + n.voteCount, 0);
+      const percentage = totalVotes > 0 
+        ? ((topNominee.voteCount / totalVotes) * 100).toFixed(2)
+        : 0;
+
+      return {
+        voteId: vote._id,
+        category: vote.category,
+        user: {
+          _id: topNominee.user._id,
+          firstName: topNominee.user.firstName,
+          lastName: topNominee.user.lastName,
+          profileImg: topNominee.user.profileImg,
+          position: topNominee.user.position,
+          department: topNominee.user.department
+        },
+        voteCount: topNominee.voteCount,
+        percentage,
+        totalVotes
+      };
+    });
+
+    res.status(200).json(winners);
+  } catch (error) {
+    console.error('getAllWinnersAdmin error:', error);
+    res.status(500).json({ message: 'Failed to fetch winners' });
+  }
+};
+
 

@@ -17,6 +17,7 @@ import dashboardRoute from './routes/dashboardRoutes.js';
 import notificationRoutes from './routes/user_Routes/notificationRoutes.js';
 import errorHandler from './middleware/errorHandler.js';
 import logger from './middleware/logEvents.js';
+import adminDashboardRoute from './routes/AdminRoutes/adminDashboardRoute.js';
 
 
 dotenv.config();
@@ -52,13 +53,15 @@ app.use("/api/users", userRoutes);
 app.use("/api/announcements", announcementRoutes);
 app.use("/api/prayer", prayerRoutes);
 app.use("/api/dashboard", dashboardRoute);
-app.use("/api/notifications", notificationRoutes)
+app.use("/api/notifications", notificationRoutes);
 
 // Admin Routes
 app.use("/api/admin", adminRoutes); 
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/departments", departmentRoutes);
-app.use("/api/votes", votesRoutes)
+app.use("/api/votes", votesRoutes);
+app.use("/api/admin", adminDashboardRoute);
+
 
 
 mongoose.connection.once('open', () => {

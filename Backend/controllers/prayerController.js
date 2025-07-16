@@ -50,7 +50,7 @@ export const submitPrayerRequest = async (req, res) => {
 // ADMIN gets all prayer requests (including hidden ones)
 export const getAllPrayerRequests = async (req, res) => {
   try {
-    const prayers = await Prayer.find().populate('submittedBy', 'firstName lastName email');
+    const prayers = await Prayer.find();
     res.status(200).json(prayers);
   } catch (error) {
     console.error("getAllPrayerRequests error:", error.message);
@@ -118,6 +118,31 @@ export const approvePrayerRequest = async (req, res) => {
   } catch (error) {
     console.error("approvePrayerRequest error:", error.message);
     res.status(500).json({ error: "Internal server error." });
+  }
+};
+
+export const rejectPrayerRequest = async (req, res) => {
+  try {
+    const prayer = await Prayer.findByIdAndDelete(req.params.id);
+
+    if (!prayer) {
+      return res.status(404).json({
+        success: false,
+        message: 'Prayer not found'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {},
+      message: 'Prayer rejected successfully'
+    });
+  } catch (error) {
+    console.error("rejectPrayer error:", error.message);
+    res.status(500).json({
+      success: false,
+      error: "Internal server error."
+    });
   }
 };
 

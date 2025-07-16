@@ -55,6 +55,49 @@ export const getAllDepartments = async (req, res) => {
     }
 }
 
+export const assignLeader = async (req, res) => {
+  try {
+    const { departmentId } = req.params;
+    const { userId } = req.body;
+
+    // Validate department exists
+    const department = await Department.findById(departmentId);
+    if (!department) {
+      return res.status(404).json({ error: "Department not found" });
+    }
+
+    // Validate user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if user is already a member, if not add them
+    if (!department.members.includes(userId)) {
+      department.members.push(userId);
+    }
+
+    // Set the user as the primary leader (first in leads array)
+    department.leads = [userId, ...department.leads.filter(id => id.toString() !== userId)];
+
+    await department.save();
+
+    // Populate the updated department data
+    const populatedDepartment = await Department.findById(departmentId)
+      .populate('leads', 'firstName lastName email profileImg position')
+      .populate('members', 'firstName lastName email profileImg position');
+
+    res.status(200).json({
+      message: "Leader assigned successfully",
+      department: populatedDepartment
+    });
+  } catch (error) {
+    console.error("Error assigning leader:", error.message);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+
 export const getAllUsersDepartments = async (req, res) => {
   try {
     const departments = await Department.find()
@@ -156,7 +199,7 @@ export const getDepartmentById = async (req, res) => {
 
 export const updateDepartment = async (req, res) => {
     const { id } = req.params;
-    const { name, description } = req.body;
+    const { name, description, color, icon } = req.body;
 
     try {
         const department = await Department.findById(id);
@@ -167,6 +210,8 @@ export const updateDepartment = async (req, res) => {
         // Update fields
         if (name) department.name = name;
         if (description) department.description = description;
+        if (color) department.color = color;
+        if (icon) department.icon = icon;
 
         await department.save();
         res.status(200).json({

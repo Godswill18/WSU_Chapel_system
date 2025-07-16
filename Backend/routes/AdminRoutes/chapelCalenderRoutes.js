@@ -8,8 +8,9 @@ const router = express.Router();
 router.get('/chapel-calendar', protectAdminRoute, getChapelEvents);
 
 router.get('/chapel-events', protectRoute, getChapelEvents);
+
 // Route to create a new chapel event
-router.post('/chapel-calendar', protectAdminRoute, createChapelEvent);
+router.post('/create-calendar', protectAdminRoute, createChapelEvent);
 
 // Route to get a specific chapel event by ID
 router.get('/chapel-calendar/:id', protectAdminRoute, getEventById);

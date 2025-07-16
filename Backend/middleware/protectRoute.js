@@ -46,13 +46,13 @@ export const protectAdminRoute = async (req, res, next) => {
             return res.status(401).json({error: "Unauthorized, invalid token"});
         }
 
-        const user = await Admin.findById(decoded.userId).select("-password");
+        const admin = await Admin.findById(decoded.adminId).select("-password");
 
-        if(!user) {
-            return res.status(401).json({error: "Unauthorized, user not found"});
+        if(!admin) {
+            return res.status(401).json({error: "Unauthorized, Admin not found"});
         }
 
-        req.user = user; // Attach the user to the request object for use in the next middleware or route handler
+        req.admin = admin; // Attach the admin to the request object for use in the next middleware or route handler
         next(); // Call the next middleware or route handler
 
     }catch(error){

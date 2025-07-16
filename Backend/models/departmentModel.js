@@ -30,5 +30,10 @@ const departmentSchema = new mongoose.Schema({
   }]
 }, { timestamps: true });
 
+// Add a virtual property for the primary leader
+departmentSchema.virtual('leader').get(function() {
+  return this.leads.length > 0 ? this.leads[0] : null;
+});
+
 const Department = mongoose.model('Department', departmentSchema);
 export default Department;

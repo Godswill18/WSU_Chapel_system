@@ -30,9 +30,13 @@ const adminSchema = new mongoose.Schema({
     },
     account_Type:{
         type: String,
-        enum: ["super_admin", "admin"],
+        enum: ["super admin", "admin"],
         required: true,
     },
+    isActive: {
+        type: Boolean,
+        default: true
+    }
 }, {timestamps: true});
 
 const Admin = mongoose.model('Admin', adminSchema);

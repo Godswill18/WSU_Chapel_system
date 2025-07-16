@@ -1,6 +1,6 @@
 import express from 'express';
 import { protectAdminRoute, protectRoute } from '../../middleware/protectRoute.js';
-import {submitPrayerRequest, getAllPrayerRequests, approvePrayerRequest, getPublicPrayerRequests, prayFor, getPrayerCount} from '../../controllers/prayerController.js';
+import {submitPrayerRequest, getAllPrayerRequests, approvePrayerRequest, getPublicPrayerRequests, prayFor, getPrayerCount, rejectPrayerRequest} from '../../controllers/prayerController.js';
 
 const router = express.Router();
 
@@ -11,7 +11,10 @@ router.post("/submitPrayerRequest", protectRoute, submitPrayerRequest);
 router.get("/all-request", protectAdminRoute, getAllPrayerRequests);
 
 // admin to approve prayer request 
-router.patch("/approve/:id", protectAdminRoute, approvePrayerRequest);
+router.put("/approve/:id", protectAdminRoute, approvePrayerRequest);
+
+
+router.delete("/reject/:id", protectAdminRoute, rejectPrayerRequest);
 
 // users to view prayer requests 
 router.get("/public-view", protectRoute, getPublicPrayerRequests);

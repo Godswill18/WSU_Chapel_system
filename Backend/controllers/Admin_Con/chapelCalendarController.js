@@ -66,7 +66,7 @@ export const getEventById = async (req, res) => {
 
 export const updateChapelEvent = async (req, res) => {
     const { id } = req.params;
-    const { title, description, startDate, endDate, location } = req.body;
+    const { title, date, time, location, type, description, organizer, attendees } = req.body;
 
     try {
         const event = await Calendar.findById(id);
@@ -77,9 +77,12 @@ export const updateChapelEvent = async (req, res) => {
         // Update fields
         if (title) event.title = title;
         if (description) event.description = description;
-        if (startDate) event.startDate = new Date(startDate);
-        if (endDate) event.endDate = new Date(endDate);
+        if (date) event.date = new Date(date);
+        if (time) event.time = time;
+        if (type) event.type = type;
         if (location) event.location = location;
+        if (organizer) event.organizer = organizer;
+        if (attendees) event.attendees = attendees;
 
         await event.save();
         res.status(200).json({

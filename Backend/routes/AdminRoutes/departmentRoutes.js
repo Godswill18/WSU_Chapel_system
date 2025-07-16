@@ -1,5 +1,5 @@
 import express from 'express';
-import { createDepartment, getAllDepartments, getDepartmentById, updateDepartment, deleteDepartment, joinDepartment, leaveDepartment, getAllUsersDepartments, getUserDepartments } from '../../controllers/Admin_Con/departmentControllers.js';
+import { createDepartment, getAllDepartments, assignLeader, getDepartmentById, updateDepartment, deleteDepartment, joinDepartment, leaveDepartment, getAllUsersDepartments, getUserDepartments } from '../../controllers/Admin_Con/departmentControllers.js';
 import { protectAdminRoute, protectRoute } from '../../middleware/protectRoute.js';
 const router = express.Router();
 
@@ -17,6 +17,8 @@ router.put('/updateDepartment/:id', protectAdminRoute, updateDepartment);
 
 // Route to delete a department
 router.delete('/deleteDepartment/:id', protectAdminRoute, deleteDepartment);
+
+router.put('/assignLeader/:departmentId', protectAdminRoute, assignLeader)
 
 
 // user part

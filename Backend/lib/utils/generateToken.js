@@ -11,4 +11,5 @@ export const generateTokenAndSetCookie = (userId, res) => {
     sameSite: "strict", // Helps prevent CSRF attacks cross-site request forgery attacks
     secure: process.env.NODE_ENV !== "development", // Use secure cookies in development mode but change when in production in ENV file
   })  
+  return token; // Return the generated token
 }

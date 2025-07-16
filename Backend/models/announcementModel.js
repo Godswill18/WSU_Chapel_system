@@ -25,11 +25,11 @@ const announcementSchema = new mongoose.Schema(
       trim: true,
       maxlength: 100
     },
-    date: {
-      type: String, // Storing as String in YYYY-MM-DD format
-      required: true,
-      match: /^\d{4}-\d{2}-\d{2}$/ // Ensures YYYY-MM-DD format
-    },
+    // date: {
+    //   type: String, // Storing as String in YYYY-MM-DD format
+    //   required: true,
+    //   match: /^\d{4}-\d{2}-\d{2}$/ // Ensures YYYY-MM-DD format
+    // },
     category: {
       type: String,
       required: true,
@@ -45,6 +45,12 @@ const announcementSchema = new mongoose.Schema(
       trim: true,
       default: ""
     },
+    priority:{
+      type: String,
+      required: true,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium'
+    },
     // Optional fields that might be useful
     lastUpdatedBy: {
       type: String,
@@ -55,10 +61,10 @@ const announcementSchema = new mongoose.Schema(
       match: /^\d{4}-\d{2}-\d{2}$/
     },
     // For future features
-    tags: {
-      type: [String],
-      default: []
-    },
+    // tags: {
+    //   type: [String],
+    //   default: []
+    // },
     // For analytics
     views: {
       type: Number,
