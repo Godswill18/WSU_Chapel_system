@@ -63,6 +63,12 @@ app.use("/api/votes", votesRoutes);
 app.use("/api/admin", adminDashboardRoute);
 
 
+app.get('/', (req, res) => {
+  res.send('API is live!');
+});
+
+
+
 
 mongoose.connection.once('open', () => {
     console.log('Connected to MongoDB...');
