@@ -2,10 +2,10 @@
   "name": "wellspring-voting",
   "version": "1.0.0",
   "description": "wellspring e-voting sytem ",
-  "main": "backend/server.js",
+  "main": "api/index.js",
   "scripts": {
-    "dev": "nodemon backend/server.js",
-    "start": "node backend/server.js"
+    "dev": "nodemon api/index.js",
+    "start": "node api/index.js"
   },
   "author": "",
   "type": "module",
