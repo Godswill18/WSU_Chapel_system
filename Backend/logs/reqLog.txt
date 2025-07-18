@@ -21810,4 +21810,4 @@
 20250716	22:55:46	dc6319e4-d3f1-46e7-bfff-07ba7867a6e4	GET	http://localhost:5173	/api/admin/getAllUser
 20250716	22:55:46	80fd63e9-330e-49c1-9581-2482581d08ec	GET	http://localhost:5173	/api/admin/getAllUser
 20250716	22:55:46	f59c193f-a68c-4650-aa51-59d1fa72f0e5	GET	undefined	/uploads/images/profileImg/686ab46f36ba39f98e499fdd/1751913286702-297105247.jpg
-20250718	23:35:56	97daaec3-69e9-4c0c-9c01-1adf8fb4f05f	GET	undefined	/favicon.ico
+
