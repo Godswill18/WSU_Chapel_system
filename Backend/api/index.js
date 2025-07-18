@@ -3,21 +3,21 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import connectDB from './DB/connectMongoDB.js';
-import corsOptions from './config/corsOptions.js';
-import authRoutes from './routes/user_Routes/authRoutes.js';
-import userRoutes from './routes/user_Routes/userRoutes.js'
-import announcementRoutes from './routes/AdminRoutes/announcementRoutes.js';
-import adminRoutes from './routes/AdminRoutes/adminRoutes.js';
-import calendarRoutes from './routes/AdminRoutes/chapelCalenderRoutes.js';
-import departmentRoutes from './routes/AdminRoutes/departmentRoutes.js';
-import votesRoutes from './routes/user_Routes/votesRoutes.js';
-import prayerRoutes from './routes/user_Routes/prayerRoutes.js';
-import dashboardRoute from './routes/dashboardRoutes.js';
-import notificationRoutes from './routes/user_Routes/notificationRoutes.js';
-import errorHandler from './middleware/errorHandler.js';
-import logger from './middleware/logEvents.js';
-import adminDashboardRoute from './routes/AdminRoutes/adminDashboardRoute.js';
+import connectDB from '../DB/connectMongoDB.js';
+import corsOptions from '../config/corsOptions.js';
+import authRoutes from '../routes/user_Routes/authRoutes.js';
+import userRoutes from '../routes/user_Routes/userRoutes.js'
+import announcementRoutes from '../routes/AdminRoutes/announcementRoutes.js';
+import adminRoutes from '../routes/AdminRoutes/adminRoutes.js';
+import calendarRoutes from '../routes/AdminRoutes/chapelCalenderRoutes.js';
+import departmentRoutes from '../routes/AdminRoutes/departmentRoutes.js';
+import votesRoutes from '../routes/user_Routes/votesRoutes.js';
+import prayerRoutes from '../routes/user_Routes/prayerRoutes.js';
+import dashboardRoute from '../routes/dashboardRoutes.js';
+import notificationRoutes from '../routes/user_Routes/notificationRoutes.js';
+import errorHandler from '../middleware/errorHandler.js';
+import logger from '../middleware/logEvents.js';
+import adminDashboardRoute from '../routes/AdminRoutes/adminDashboardRoute.js';
 
 
 dotenv.config();
