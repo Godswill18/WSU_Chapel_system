@@ -28,6 +28,10 @@ connectDB(); // Connect to MongoDB using the connectDB function
 const app = express();
 // const PORT = process.env.PORT || 8000;
 
+app.get('/', (req, res) => {
+  res.send('API is live!');
+});
+
 app.use(express.json({limit:"5mb"})); // Middleware to parse JSON requests || to parse incoming JSON data  [ Limit shouldn't be too high, as it can lead to performance issues or security vulnerabilities DOS ]
 app.use(express.urlencoded({ extended: false })); // Middleware to parse URL-encoded data || to parse form data(urlencoded)
 
@@ -63,9 +67,7 @@ app.use("/api/votes", votesRoutes);
 app.use("/api/admin", adminDashboardRoute);
 
 
-app.get('/', (req, res) => {
-  res.send('API is live!');
-});
+
 
 
 
