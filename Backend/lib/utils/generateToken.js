@@ -9,7 +9,8 @@ export const generateTokenAndSetCookie = (userId, res) => {
     maxAge: 2 * 24 * 60 * 60 * 1000, // Cookie expiration time (2 days)
     httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
     sameSite: "strict", // Helps prevent CSRF attacks cross-site request forgery attacks
-    secure: process.env.NODE_ENV !== "development", // Use secure cookies in development mode but change when in production in ENV file
+    secure: true, // Use secure cookies in development mode but change when in production in ENV file
+    // secure: process.env.NODE_ENV !== "development", // Use secure cookies in development mode but change when in production in ENV file
   })  
   return token; // Return the generated token
 }

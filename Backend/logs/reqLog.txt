@@ -21844,3 +21844,12 @@
 20250719	18:27:19	fdeeeefc-8ff8-4811-984f-92a9edae7e2d	GET	http://localhost:5173	/api/departments/fetch-User-Departments/686ab46f36ba39f98e499fdd
 20250719	18:27:20	3d90d0ae-dca1-4f2f-87f9-43d8bef75f78	OPTIONS	http://localhost:5173	/api/auth/me
 20250719	18:27:20	60ccce85-1aea-4d18-85c7-05f26d182204	GET	http://localhost:5173	/api/auth/me
+20250719	22:45:09	ad09e111-632f-4d77-b5c1-5f8b826089a7	OPTIONS	http://localhost:5173	/apiapi/auth/me
+20250719	22:45:09	59d221a3-3c6e-4dcc-ad15-49c7f245f73f	OPTIONS	http://localhost:5173	/apiapi/auth/me
+20250719	22:45:09	555be25f-84b5-4b70-9257-a911e42df66e	GET	http://localhost:5173	/apiapi/auth/me
+20250719	22:45:09	3a546d0e-c850-41ee-a620-7b46fcd0f041	GET	http://localhost:5173	/apiapi/auth/me
+20250719	22:45:22	0d57d6b4-e866-432a-954d-6e11c84aba32	OPTIONS	http://localhost:5173	/apiapi/auth/login
+20250719	22:45:22	98b3bc8b-5330-4536-bc8f-3e8d4b0dc484	POST	http://localhost:5173	/apiapi/auth/login
+20250719	22:45:28	3f72eabf-81a1-4ea8-9e2d-be633b8a8936	OPTIONS	http://localhost:5173	/apiapi/auth/login
+20250719	22:45:28	b456b466-3a9d-4fc8-aa70-621a45d50999	POST	http://localhost:5173	/apiapi/auth/login
+20250719	22:45:33	906040cb-1e3c-4737-8d67-68c355dd3834	POST	http://localhost:5173	/apiapi/auth/login
