@@ -1,5 +1,7 @@
 const allowedOrigins = [
-    'https://wellspring-chapel-backend.onrender.com', // Your Render backend URL
+    'https://wsu-chapel.onrender.com',
+    'https://chapel-24canx3am-gokhameragmailcoms-projects.vercel.app',
+    'https://admin-chapel-6rs0gynwq-gokhameragmailcoms-projects.vercel.app',
     'https://your-frontend-domain.com', // Replace with your actual frontend URL
     'https://www.yoursite.com',
     'http://127.0.0.1:5500',
