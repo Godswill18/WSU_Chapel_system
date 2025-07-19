@@ -4,12 +4,18 @@
   "description": "wellspring e-voting sytem ",
   "main": "backend/api/index.js",
   "scripts": {
-    "dev": "nodemon backend/api/index.js",
-    "start": "node backend/api/index.js"
+    "dev": "cross-env NODE_ENV=development nodemon backend/api/index.js",
+    "start": "cross-env NODE_ENV=production node backend/api/index.js",
+    "start:dev": "cross-env NODE_ENV=development node backend/api/index.js",
+    "start:prod": "cross-env NODE_ENV=production node backend/api/index.js",
+    "build": "echo '🏗️  Building Node.js application...' && echo '✅ Build successful - No compilation needed for Node.js'"
   },
   "author": "",
   "type": "module",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -24,6 +30,7 @@
     "multer": "^2.0.1",
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.10",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "cross-env": "^7.0.3"
   }
 }
