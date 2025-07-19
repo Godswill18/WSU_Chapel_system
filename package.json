@@ -8,7 +8,6 @@
     "start": "node backend/api/index.js"
   },
   "author": "",
-  "module": "commonjs",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
