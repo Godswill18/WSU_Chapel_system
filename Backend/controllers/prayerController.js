@@ -1,10 +1,10 @@
 // controllers/prayerController.js
 import Prayer from '../models/prayerModel.js';
 import User from '../models/userModel.js';
-import { 
-  createUserNotification,
-  batchCreateNotifications 
-} from '../lib/utils/notificationUtils.js';
+// import { 
+//   createUserNotification,
+//   batchCreateNotifications 
+// } from '../lib/utils/notificationUtils.js';
 
 // USER submits prayer request
 export const submitPrayerRequest = async (req, res) => {
@@ -21,24 +21,24 @@ export const submitPrayerRequest = async (req, res) => {
     await newPrayer.save();
 
     // NOTIFICATION: Alert admins about new prayer request
-    try {
-      const admins = await User.find({ role: 'admin', role: 'super admin' }).select('_id');
-      if (admins.length > 0) {
-        await batchCreateNotifications(
-          submittedBy, // The user who submitted the prayer
-          admins.map(admin => admin._id), // All admin users
-          'prayer_request', // Notification type
-          'New Prayer Request Needs Approval', // Title
-          `${user.firstName} ${user.lastName} submitted a prayer request: "${title}"`, // Content
-          {
-            prayerId: newPrayer._id,
-            isAdminAlert: true
-          }
-        ).save();
-      }
-    } catch (notifError) {
-      console.error("Notification error (non-critical):", notifError.message);
-    }
+    // try {
+    //   const admins = await User.find({ role: 'admin', role: 'super admin' }).select('_id');
+    //   if (admins.length > 0) {
+    //     await batchCreateNotifications(
+    //       submittedBy, // The user who submitted the prayer
+    //       admins.map(admin => admin._id), // All admin users
+    //       'prayer_request', // Notification type
+    //       'New Prayer Request Needs Approval', // Title
+    //       `${user.firstName} ${user.lastName} submitted a prayer request: "${title}"`, // Content
+    //       {
+    //         prayerId: newPrayer._id,
+    //         isAdminAlert: true
+    //       }
+    //     ).save();
+    //   }
+    // } catch (notifError) {
+    //   console.error("Notification error (non-critical):", notifError.message);
+    // }
 
     res.status(201).json({ message: "Prayer request submitted.", prayer: newPrayer });
   } catch (error) {
@@ -71,23 +71,23 @@ export const approvePrayerRequest = async (req, res) => {
     await prayer.save();
 
     // NOTIFICATION: Notify the submitter that their prayer was approved
-    if (prayer.submittedBy && prayer.submittedBy._id) {
-      try {
-        await createUserNotification(
-          adminUser._id, // The approving admin
-          prayer.submittedBy._id, // The original submitter
-          'prayer_request', // Notification type
-          'Your Prayer Request Was Approved', // Title
-          `Your prayer request "${prayer.title}" has been approved and is now public`, // Content
-          {
-            prayerId: prayer._id,
-            approvedBy: adminUser._id
-          }
-        );
-      } catch (notifError) {
-        console.error("Approval notification error:", notifError.message);
-      }
-    }
+    // if (prayer.submittedBy && prayer.submittedBy._id) {
+    //   try {
+    //     await createUserNotification(
+    //       adminUser._id, // The approving admin
+    //       prayer.submittedBy._id, // The original submitter
+    //       'prayer_request', // Notification type
+    //       'Your Prayer Request Was Approved', // Title
+    //       `Your prayer request "${prayer.title}" has been approved and is now public`, // Content
+    //       {
+    //         prayerId: prayer._id,
+    //         approvedBy: adminUser._id
+    //       }
+    //     );
+    //   } catch (notifError) {
+    //     console.error("Approval notification error:", notifError.message);
+    //   }
+    // }
 
     // NOTIFICATION: Optionally notify community about new public prayer
     // This could be enabled based on settings

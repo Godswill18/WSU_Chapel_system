@@ -1,7 +1,7 @@
 import Announcement from "../models/AnnouncementModel.js";
 import fs from "fs";
 import path from "path";
-import { batchCreateNotifications } from "../lib/utils/notificationUtils.js";
+// import { batchCreateNotifications } from "../lib/utils/notificationUtils.js";
 import User from "../models/userModel.js";
 
 export const createAnnouncement = async (req, res) => {
@@ -76,42 +76,42 @@ export const createAnnouncement = async (req, res) => {
     const savedAnnouncement = await announcement.save();
 
     // Notification logic
-    try {
-      let recipientUserIds = [];
+    // try {
+    //   let recipientUserIds = [];
       
-      if (category === 'urgent') {
-        const activeUsers = await User.find({ isActive: true }).select('_id');
-        recipientUserIds = activeUsers.map(user => user._id);
-      } else if (category === 'community') {
-        const communityUsers = await User.find({ 
-          notifyCommunity: true,
-          isActive: true 
-        }).select('_id');
-        recipientUserIds = communityUsers.map(user => user._id);
-      }
+    //   if (category === 'urgent') {
+    //     const activeUsers = await User.find({ isActive: true }).select('_id');
+    //     recipientUserIds = activeUsers.map(user => user._id);
+    //   } else if (category === 'community') {
+    //     const communityUsers = await User.find({ 
+    //       notifyCommunity: true,
+    //       isActive: true 
+    //     }).select('_id');
+    //     recipientUserIds = communityUsers.map(user => user._id);
+    //   }
 
-      // Filter out creator from notifications
-      recipientUserIds = recipientUserIds.filter(id => 
-        id.toString() !== createdBy.toString()
-      );
+    //   // Filter out creator from notifications
+    //   recipientUserIds = recipientUserIds.filter(id => 
+    //     id.toString() !== createdBy.toString()
+    //   );
 
-      if (recipientUserIds.length > 0) {
-        await batchCreateNotifications(
-          createdBy,
-          recipientUserIds,
-          'announcement',
-          `New ${category.charAt(0).toUpperCase() + category.slice(1)} Announcement`,
-          title,
-          {
-            announcementId: savedAnnouncement._id,
-            category
-          }
-        );
-      }
-    } catch (notifError) {
-      console.error("Notification error (non-critical):", notifError);
-      // Continue even if notifications fail
-    }
+    //   if (recipientUserIds.length > 0) {
+    //     await batchCreateNotifications(
+    //       createdBy,
+    //       recipientUserIds,
+    //       'announcement',
+    //       `New ${category.charAt(0).toUpperCase() + category.slice(1)} Announcement`,
+    //       title,
+    //       {
+    //         announcementId: savedAnnouncement._id,
+    //         category
+    //       }
+    //     );
+    //   }
+    // } catch (notifError) {
+    //   console.error("Notification error (non-critical):", notifError);
+    //   // Continue even if notifications fail
+    // }
 
     return res.status(201).json({
       success: true,
