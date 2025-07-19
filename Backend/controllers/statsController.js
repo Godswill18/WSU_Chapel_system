@@ -2,7 +2,7 @@ import User from '../models/userModel.js';
 import Prayer from '../models/prayerModel.js';
 // import Event from '../models/eventModel.js';
 import Calendar from '../models/calendarModel.js';
-import Vote from '../models/VoteModel.js';
+import Vote from '../models/voteModel.js';
 
 export const getDashboardStats = async (req, res) => {
   try {

@@ -1,4 +1,4 @@
-import Vote from "../models/VoteModel.js";
+import Vote from "../models/voteModel.js";
 import User from "../models/userModel.js";
 
 

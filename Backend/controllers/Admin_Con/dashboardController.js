@@ -1,7 +1,7 @@
 import User from "../../models/userModel.js";
 import Admin from "../../models/adminModel.js";
 import Calendar from "../../models/calendarModel.js";
-import Announcement from "../../models/AnnouncementModel.js";
+import Announcement from "../../models/announcementModel.js";
 import Prayer from "../../models/prayerModel.js";
 
 export const getAdminDashboardStats = async (req, res) => {

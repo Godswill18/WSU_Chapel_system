@@ -1,7 +1,7 @@
 // utils/voteScheduler.js
 // import Vote from "../../models/voteModel.js";
 import { scheduleJob } from 'node-schedule';
-import Vote from '../../models/VoteModel.js';
+import Vote from '../../models/voteModel.js';
 
 // Function to process ended votes
 export const processEndedVotes = async () => {
