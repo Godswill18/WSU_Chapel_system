@@ -26,7 +26,7 @@ dotenv.config();
 connectDB(); // Connect to MongoDB using the connectDB function
 
 const app = express();
-// const PORT = process.env.PORT || 8000;
+const PORT = process.env.PORT || 8000;
 
 app.get('/', (req, res) => {
   res.send('API is live!');
@@ -73,8 +73,25 @@ app.use("/api/admin", adminDashboardRoute);
 
 
 mongoose.connection.once('open', () => {
-    console.log('Connected to MongoDB...');
-    // app.listen(PORT, () => console.log(`Server running on port ${PORT}....`));
+  console.log('Connected to MongoDB...');
+  app.listen(PORT, () => console.log(`Server running on port ${PORT}....`));
+  console.log('✅ MongoDB Connected Successfully');
+  console.log(`🚀 Server Environment: ${process.env.NODE_ENV || 'development'}`);
+
+  app.listen(PORT, () => {
+    console.log(`🎉 Server running successfully on port ${PORT}`);
+    console.log(`📍 Server URL: http://localhost:${PORT}`);
+    console.log(`🔗 Health check: GET /`);
+    console.log('─'.repeat(50));
+  });
+});
+
+mongoose.connection.on('error', (err) => {
+  console.error('❌ MongoDB connection error:', err);
+});
+
+mongoose.connection.on('disconnected', () => {
+  console.log('⚠️ MongoDB disconnected');
 });
 
 export default app;
