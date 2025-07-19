@@ -8,6 +8,7 @@
     "start": "node backend/api/index.js"
   },
   "author": "",
+  "module": "commonjs",
   "type": "module",
   "license": "ISC",
   "dependencies": {
