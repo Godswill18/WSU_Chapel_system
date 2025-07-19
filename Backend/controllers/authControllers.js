@@ -5,9 +5,9 @@ import bcrypt from 'bcryptjs';
 
 export const register = async (req, res) => {
   try {
-    const { firstName, lastName, department, position, courseOfStudy, email, phoneNumber, dateOfBirth, password } = req.body;
+    const { firstName, lastName, courseOfStudy, email, phoneNumber, dateOfBirth, password } = req.body;
 
-    if (!firstName || !lastName || !department || !position || !courseOfStudy || !email || !phoneNumber || !dateOfBirth || !password) {
+    if (!firstName || !lastName || !courseOfStudy || !email || !phoneNumber || !dateOfBirth || !password) {
       return res.status(400).json({ success: false, message: "All fields are required" });
     }
 
@@ -36,8 +36,8 @@ export const register = async (req, res) => {
     const newUser = new User({
       firstName,
       lastName,
-      department,
-      position,
+      // department,
+      // position,
       courseOfStudy,
       email,
       phoneNumber,
@@ -56,8 +56,8 @@ export const register = async (req, res) => {
         _id: newUser._id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
-        department: newUser.department,
-        position: newUser.position,
+        // department: newUser.department,
+        // position: newUser.position,
         courseOfStudy: newUser.courseOfStudy,
         email: newUser.email,
         phoneNumber: newUser.phoneNumber,
