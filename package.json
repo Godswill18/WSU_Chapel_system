@@ -11,6 +11,7 @@
     "build": "echo '🏗️  Building Node.js application...' && echo '✅ Build successful - No compilation needed for Node.js'"
   },
   "author": "",
+   "type": "module",
   "license": "ISC",
   "engines": {
     "node": ">=18.0.0"
@@ -20,6 +21,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "cros": "^1.1.0",
+    "cross-env": "^7.0.3",
     "date-fns": "^4.1.0",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
@@ -29,7 +31,6 @@
     "multer": "^2.0.1",
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.10",
-    "uuid": "^11.1.0",
-    "cross-env": "^7.0.3"
+    "uuid": "^11.1.0"
   }
 }
