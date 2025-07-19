@@ -1,6 +1,6 @@
 import express from 'express';
 import { protectRoute, protectAdminRoute } from '../../middleware/protectRoute.js';
-import { createAnnouncement, getAllAnnouncements, getAnnouncementById, updateAnnouncement, deleteAnnouncement, getUserAnnouncements, getAllAnnouncementsAdmin, togglePinAnnouncement } from '../../controllers/announcementControllers';
+import { createAnnouncement, getAllAnnouncements, getAnnouncementById, updateAnnouncement, deleteAnnouncement, getUserAnnouncements, getAllAnnouncementsAdmin, togglePinAnnouncement } from '../../controllers/announcementControllers.js';
 import uploadAnnouncement from '../../config/announceMulter.js'
 
 const router = express.Router();
