@@ -4,11 +4,11 @@
   "description": "wellspring e-voting sytem ",
   "main": "backend/api/index.js",
   "scripts": {
-    "dev": "nodemon backend/api/index.js",
-    "start": "node backend/api/index.js"
+    "dev": "nodemon backend/index.js",
+    "start": "node backend/index.js"
   },
   "author": "",
-  "module": "commonjs",
+  "type": "module",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.2",
@@ -25,8 +25,5 @@
     "node-schedule": "^2.1.1",
     "nodemon": "^3.1.10",
     "uuid": "^11.1.0"
-  },
-  "engines": {
-    "node": "22.x"
   }
 }
