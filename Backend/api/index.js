@@ -26,13 +26,13 @@ dotenv.config();
 connectDB(); // Connect to MongoDB using the connectDB function
 
 const app = express();
-const PORT = process.env.PORT || 8000;
+// const PORT = process.env.PORT || 8000;
 
 app.get('/', (req, res) => {
   res.send('API is live!');
 });
 
-app.use(express.json({limit:"5mb"})); // Middleware to parse JSON requests || to parse incoming JSON data  [ Limit shouldn't be too high, as it can lead to performance issues or security vulnerabilities DOS ]
+app.use(express.json({ limit: "5mb" })); // Middleware to parse JSON requests || to parse incoming JSON data  [ Limit shouldn't be too high, as it can lead to performance issues or security vulnerabilities DOS ]
 app.use(express.urlencoded({ extended: false })); // Middleware to parse URL-encoded data || to parse form data(urlencoded)
 
 // Middleware
@@ -60,7 +60,7 @@ app.use("/api/dashboard", dashboardRoute);
 app.use("/api/notifications", notificationRoutes);
 
 // Admin Routes
-app.use("/api/admin", adminRoutes); 
+app.use("/api/admin", adminRoutes);
 app.use("/api/calendar", calendarRoutes);
 app.use("/api/departments", departmentRoutes);
 app.use("/api/votes", votesRoutes);
@@ -72,9 +72,9 @@ app.use("/api/admin", adminDashboardRoute);
 
 
 
+const PORT = process.env.PORT || 8000;
+
 mongoose.connection.once('open', () => {
-  console.log('Connected to MongoDB...');
-  app.listen(PORT, () => console.log(`Server running on port ${PORT}....`));
   console.log('✅ MongoDB Connected Successfully');
   console.log(`🚀 Server Environment: ${process.env.NODE_ENV || 'development'}`);
 
@@ -87,7 +87,7 @@ mongoose.connection.once('open', () => {
 });
 
 mongoose.connection.on('error', (err) => {
-  console.error('❌ MongoDB connection error!:', err);
+  console.error('❌ MongoDB connection error:', err);
 });
 
 mongoose.connection.on('disconnected', () => {
