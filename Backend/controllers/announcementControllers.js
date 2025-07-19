@@ -1,4 +1,4 @@
-import Announcement from "../models/AnnouncementModel";
+import Announcement from "../models/AnnouncementModel.js";
 import fs from "fs";
 import path from "path";
 // import { batchCreateNotifications } from "../lib/utils/notificationUtils.js";
