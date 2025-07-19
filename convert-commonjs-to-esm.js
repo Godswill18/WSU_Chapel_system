@@ -1,13 +1,12 @@
 import fs from 'fs';
 import path from 'path';
 
-const directory = './Backend'; // Change to your backend root folder
+const backendDir = './Backend'; // Change if your backend folder has a different name
 
-// Recursively read all .js files in the directory
 function getAllJsFiles(dirPath, arrayOfFiles = []) {
   const files = fs.readdirSync(dirPath);
 
-  files.forEach((file) => {
+  files.forEach(file => {
     const fullPath = path.join(dirPath, file);
     if (fs.statSync(fullPath).isDirectory()) {
       getAllJsFiles(fullPath, arrayOfFiles);
@@ -23,24 +22,21 @@ function convertFile(filePath) {
   let content = fs.readFileSync(filePath, 'utf8');
   let updated = false;
 
-  // Replace module.exports = something → export default something
-  if (/module\.exports\s*=\s*/.test(content)) {
+  // Convert module.exports = something -> export default something
+  if (/module\.exports\s*=/.test(content)) {
     content = content.replace(/module\.exports\s*=\s*/g, 'export default ');
     updated = true;
   }
 
-  // Replace exports.something = value → export const something = value
+  // Convert exports.something = value -> export const something = value
   if (/exports\.[a-zA-Z0-9_$]+\s*=/.test(content)) {
     content = content.replace(/exports\.([a-zA-Z0-9_$]+)\s*=\s*/g, 'export const $1 = ');
     updated = true;
   }
 
-  // Replace require statements → import statements (basic conversion)
-  if (/const\s+.+\s*=\s*require\(['"].+['"]\)/.test(content)) {
-    content = content.replace(
-      /const\s+(\w+)\s*=\s*require\(['"](.+)['"]\)/g,
-      'import $1 from \'$2\''
-    );
+  // Convert require() -> import (basic conversion)
+  if (/const\s+\w+\s*=\s*require\(['"].+['"]\)/.test(content)) {
+    content = content.replace(/const\s+(\w+)\s*=\s*require\(['"](.+)['"]\)/g, 'import $1 from \'$2\'');
     updated = true;
   }
 
@@ -50,8 +46,7 @@ function convertFile(filePath) {
   }
 }
 
-// Run conversion
-const files = getAllJsFiles(directory);
+const files = getAllJsFiles(backendDir);
 files.forEach(convertFile);
 
-console.log('✅ Conversion complete!');
+console.log('✅ CommonJS → ES Modules conversion complete!');
