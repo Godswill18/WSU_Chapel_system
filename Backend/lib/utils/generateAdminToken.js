@@ -12,7 +12,7 @@ export const generateAdminTokenAndSetCookie = (adminId, res = null) => {
         maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
         httpOnly: true, // Prevent JS access
         secure: process.env.NODE_ENV === "production", // Secure only in production
-        sameSite: "none" 
+        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" 
             // secure: process.env.NODE_ENV !== "development",
         });
     }
