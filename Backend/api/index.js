@@ -18,6 +18,11 @@ import notificationRoutes from '../routes/user_Routes/notificationRoutes.js';
 import errorHandler from '../middleware/errorHandler.js';
 import logger from '../middleware/logEvents.js';
 import adminDashboardRoute from '../routes/AdminRoutes/adminDashboardRoute.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 
 dotenv.config();
@@ -45,11 +50,11 @@ app.use(logger);
 
 // Cross Origin Resource Sharing
 app.use(cors({ ...corsOptions, credentials: true }));
-app.use('/uploads', cors(), express.static('uploads'));
+app.use('/uploads', cors(), express.static(path.join(__dirname,"uploads")));
 
 
 // Serve uploaded files statically
-app.use("/uploads", express.static("uploads"));
+app.use("/uploads", express.static(path.join(__dirname,"uploads")));
 
 // routes
 app.use("/api/auth", authRoutes);
