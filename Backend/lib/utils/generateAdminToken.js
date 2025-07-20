@@ -11,7 +11,7 @@ export const generateAdminTokenAndSetCookie = (adminId, res = null) => {
         res.cookie("jwt", token, {
         maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
         httpOnly: true, // Prevent JS access
-        secure: true, // Secure only in production
+        secure: process.env.NODE_ENV === "production", // Secure only in production
         sameSite: "none" 
             // secure: process.env.NODE_ENV !== "development",
         });
