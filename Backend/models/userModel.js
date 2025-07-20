@@ -16,7 +16,7 @@ const userSchema = new mongoose.Schema({
     }],
     position:{
         type: String,
-        required: true,
+        required: false,
     },
     courseOfStudy:{
         type: String,

@@ -22341,3 +22341,14 @@
 20250720	20:46:13	2809681a-79f9-4f07-8cb6-7707c6d8c51d	GET	http://localhost:5173	/api/calendar/chapel-events
 20250720	20:46:13	9e17dee7-68b0-4514-97c8-8f16f309928e	GET	http://localhost:5173	/api/dashboard/stats
 20250720	20:46:13	78c12122-46f4-489f-90e1-63f5a407bbe3	GET	undefined	/uploads/images/profileImg/686ab46f36ba39f98e499fdd/1753020457750-345820956.jpg
+20250720	21:03:40	0cd56cbb-b4a8-47b1-9d9f-fd13e63ac29f	GET	http://localhost:5173	/api/dashboard/stats
+20250720	21:03:40	bc841f8f-d96e-4ec6-93ba-ee4f3e6f3251	OPTIONS	http://localhost:5173	/api/calendar/chapel-events
+20250720	21:03:40	087dc40f-d3b1-4522-8976-af88bf9b2b5a	GET	http://localhost:5173	/api/users/getBirthdays
+20250720	21:03:40	58f36495-f38c-4801-a98a-673a9583fcc9	OPTIONS	http://localhost:5173	/api/calendar/chapel-events
+20250720	21:03:40	e3428319-799a-4cef-bcc7-7284d9cf07d9	GET	http://localhost:5173	/api/calendar/chapel-events
+20250720	21:03:40	bed05cc4-2901-4bb7-b46e-e4d6f9b32609	GET	http://localhost:5173	/api/calendar/chapel-events
+20250720	21:03:40	04b87209-d888-4555-9ce2-0e4535d52eef	GET	http://localhost:5173	/api/users/getBirthdays
+20250720	21:03:40	e6b18fa4-1aa8-429f-be67-4b354162db2a	GET	http://localhost:5173	/api/dashboard/stats
+20250720	22:56:29	3542bbb0-e36c-4f31-aff0-859151b78960	POST	undefined	/api/auth/register
+20250720	22:56:47	ba96d42a-2da0-4af1-b0d2-ad4d627adba7	POST	undefined	/api/auth/register
+20250720	22:57:06	65ac009b-a8d6-4ddf-8730-3bcd049eba65	POST	undefined	/api/auth/register
