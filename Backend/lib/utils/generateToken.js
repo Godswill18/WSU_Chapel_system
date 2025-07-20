@@ -8,8 +8,10 @@ export const generateTokenAndSetCookie = (userId, res) => {
   res.cookie("jwt", token, {
     maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
     httpOnly: true, // Prevent JS access
-    secure: process.env.NODE_ENV === "production", // Secure only in production
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" // For cross-origin setups
+    secure: true, // Secure only in production
+    sameSite: "none" 
+    // secure: process.env.NODE_ENV === "production", // Secure only in production
+    // sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" // For cross-origin setups
   });
 
   return token; // Return token only if you also use it in frontend
