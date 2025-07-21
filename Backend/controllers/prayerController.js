@@ -195,15 +195,15 @@ export const prayFor = async (req, res) => {
       );
 
       // Create notification
-      if (prayer.submittedBy.toString() !== userId.toString()) {
-        const newNotification = new Notification({
-          type: "prayer",
-          from: userId,
-          to: prayer.submittedBy,
-          prayerId: id
-        });
-        await newNotification.save();
-      }
+      // if (prayer.submittedBy.toString() !== userId.toString()) {
+      //   const newNotification = new Notification({
+      //     type: "prayer",
+      //     from: userId,
+      //     to: prayer.submittedBy,
+      //     prayerId: id
+      //   });
+      //   await newNotification.save();
+      // }
 
       return res.status(200).json({ 
         message: "Prayer added successfully",
