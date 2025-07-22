@@ -2,6 +2,7 @@ const allowedOrigins = [
     'https://wsu-chapel.onrender.com',
     'https://chapel-app.vercel.app',  // user url
     'https://chapel-app-user.vercel.app', // user url 2-----
+    'https://chapel-app-user.vercel.app/', // user url 2-----
     'https://admin-chapel.vercel.app',  // admin url
     'https://your-frontend-domain.com', // Replace with your actual frontend URL
     'https://www.yoursite.com',
