@@ -10,7 +10,7 @@ export const generateTokenAndSetCookie = (userId, res) => {
     httpOnly: true, // Prevent JS access
     secure: process.env.NODE_ENV === "production", // Secure only in production
     sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // For cross-origin setups
-     domain: 'https://chapel-app-user.vercel.app'
+     domain: 'https://chapel-app-user.vercel.app/'
     // secure: process.env.NODE_ENV === "production", // Secure only in production
   });
 
