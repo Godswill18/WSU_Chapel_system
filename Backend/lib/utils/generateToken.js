@@ -9,8 +9,7 @@ export const generateTokenAndSetCookie = (userId, res) => {
     maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
     httpOnly: true, // Prevent JS access
     secure: process.env.NODE_ENV === "production", // Secure only in production
-    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax", // For cross-origin setups
-     domain: 'https://chapel-app-user.vercel.app/'
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" // For cross-origin setups
     // secure: process.env.NODE_ENV === "production", // Secure only in production
   });
 
