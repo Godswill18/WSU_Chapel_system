@@ -50,11 +50,13 @@ app.use(logger);
 
 // Cross Origin Resource Sharing
 app.use(cors({ ...corsOptions, credentials: true }));
-app.use('/uploads', cors(), express.static(path.join(__dirname,"uploads")));
+// app.use('/uploads', cors(), express.static(path.join(__dirname,"uploads")));
+app.use('/uploads', cors(), express.static('uploads'));
 
 
 // Serve uploaded files statically
-app.use("/uploads", express.static(path.join(__dirname,"uploads")));
+// app.use("/uploads", express.static(path.join(__dirname,"uploads")));
+app.use("/uploads", express.static("uploads"));
 
 // routes
 app.use("/api/auth", authRoutes);
@@ -63,6 +65,7 @@ app.use("/api/announcements", announcementRoutes);
 app.use("/api/prayer", prayerRoutes);
 app.use("/api/dashboard", dashboardRoute);
 app.use("/api/notifications", notificationRoutes);
+
 
 // Admin Routes
 app.use("/api/admin", adminRoutes);
