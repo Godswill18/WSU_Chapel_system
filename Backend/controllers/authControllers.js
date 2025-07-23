@@ -90,11 +90,12 @@ export const login = async (req, res) => {
     }
     
     // Generate a token and set it in the cookie
-    generateTokenAndSetCookie(user._id, res);
+    const token = generateTokenAndSetCookie(user._id, res);
     // console.log(generateTokenAndSetCookie())
     res.status(200).json({
       success: true,
       message: "Welcome",
+      token,
       data: {
         _id: user._id,
       firstName: user.firstName,
