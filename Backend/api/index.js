@@ -49,14 +49,14 @@ app.use(cookieParser());
 app.use(logger);
 
 // Cross Origin Resource Sharing
-app.use(cors({ ...corsOptions, credentials: true }));
+app.use(cors({ ...corsOptions,  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],  allowedHeaders: ['Content-Type', 'Authorization'], credentials: true }));
 // app.use('/uploads', cors(), express.static(path.join(__dirname,"uploads")));
 // app.use('/uploads', cors({ ...corsOptions, credentials: true }), express.static('uploads'));
 
 
 // Serve uploaded files statically
 // app.use("/uploads", express.static(path.join(__dirname,"uploads")));
-// app.use("/uploads", cors({ ...corsOptions, credentials: true }), express.static("uploads"));
+// app.use("/uploads", express.static("uploads"));
 app.use("/uploads", express.static("uploads"));
 
 // routes
