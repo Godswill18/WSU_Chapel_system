@@ -57,7 +57,7 @@ app.use(cors({ ...corsOptions, credentials: true }));
 // Serve uploaded files statically
 // app.use("/uploads", express.static(path.join(__dirname,"uploads")));
 // app.use("/uploads", cors({ ...corsOptions, credentials: true }), express.static("uploads"));
-app.use("/", express.static("uploads"));
+app.use("/uploads", express.static("uploads"));
 
 // routes
 app.use("/api/auth", authRoutes);
