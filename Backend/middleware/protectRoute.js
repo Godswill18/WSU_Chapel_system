@@ -1,38 +1,36 @@
 import Admin from "../models/adminModel.js";
-import jwt from 'jsonwebtoken';
-import User from '../models/userModel.js';
+import User from "../models/userModel.js";
+import jwt from "jsonwebtoken";
 
 export const protectRoute = async (req, res, next) => {
-  try {
-    let token = null;
 
-    // Check Authorization header first
-    const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer')) {
-      token = authHeader.split(' ')[1];
+    try{
+        const token = req.cookies.jwt;
+        if(!token) {
+            return res.status(401).json({error: "Unauthorized, no token provided"});
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        if(!decoded) {
+            return res.status(401).json({error: "Unauthorized, invalid token"});
+        }
+
+        const user = await User.findById(decoded.userId).select("-password");
+
+        if(!user) {
+            return res.status(401).json({error: "Unauthorized, user not found"});
+        }
+
+        req.user = user; // Attach the user to the request object for use in the next middleware or route handler
+        next(); // Call the next middleware or route handler
+
+    }catch(error){
+        console.log("Error in protectRoute middleware:", error.message);
+        return res.status(500).json({ error: "Internal server error" });
     }
 
-    // Fallback to cookie
-    if (!token && req.cookies.jwt) {
-      token = req.cookies.jwt;
-    }
-
-    if (!token) {
-      return res.status(401).json({ success: false, message: 'Not authorized, no token' });
-    }
-
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.userId).select('-password');
-    if (!req.user) {
-      return res.status(401).json({ success: false, message: 'User not found' });
-    }
-
-    next();
-  } catch (error) {
-    console.error('Error in protectRoute:', error.message);
-    return res.status(401).json({ success: false, message: 'Not authorized, invalid token' });
-  }
-};
+}
 
 export const protectAdminRoute = async (req, res, next) => {
 
