@@ -5,12 +5,14 @@ export const generateTokenAndSetCookie = (userId, res) => {
     expiresIn: '2d', // Token expires in 2 days
   });
 
-  res.cookie('jwt', token, {
+  res.cookie("jwt", token, {
     maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
     httpOnly: true, // Prevent JS access
-    secure: process.env.NODE_ENV === 'production', // ✅ Required for HTTPS
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax', // ✅ Allow cross-site
+    secure: process.env.NODE_ENV === "production", // Secure only in production
+    sameSite: process.env.NODE_ENV === "production" ? "none" : "lax" // For cross-origin setups
+    
+    // secure: process.env.NODE_ENV === "production", // Secure only in production
   });
 
-  return token;
+  return token; // Return token only if you also use it in frontend
 };
