@@ -1,18 +1,25 @@
 import jwt from 'jsonwebtoken';
 
 export const generateTokenAndSetCookie = (userId, res) => {
-  const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
-    expiresIn: '2d', // Token expires in 2 days
-  });
+  try {
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not defined');
+    }
 
-  res.cookie("jwt", token, {
-    maxAge: 2 * 24 * 60 * 60 * 1000, // 2 days
-    httpOnly: true, // Prevent JS access
-    secure: true, // Secure only in production
-    sameSite: 'None' // For cross-origin setups
-    
-    // secure: process.env.NODE_ENV === "production", // Secure only in production
-  });
+    const token = jwt.sign({ userId }, process.env.JWT_SECRET, {
+      expiresIn: '2d',
+    });
 
-  return token; // Return token only if you also use it in frontend
+    res.cookie("jwt", token, {
+      maxAge: 2 * 24 * 60 * 60 * 1000,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: process.env.NODE_ENV === "production" ? 'None' : 'Lax',
+    });
+
+    return token;
+  } catch (error) {
+    console.error('Error generating token or setting cookie:', error);
+    throw error; // Or handle as needed
+  }
 };
