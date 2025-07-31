@@ -9,6 +9,7 @@
     "start:dev": "cross-env NODE_ENV=development node Backend/api/index.js",
     "start:prod": "cross-env NODE_ENV=production node Backend/api/index.js",
     "build": "echo '🏗️  Building Node.js application...' && echo '✅ Build successful - No compilation needed for Node.js'"
+  
   },
   "author": "",
    "type": "module",
